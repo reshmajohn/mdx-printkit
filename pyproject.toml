@@ -20,7 +20,7 @@ dependencies = [
 test = ["pytest>=8,<10", "pypdf>=6,<7", "PyMuPDF>=1.26,<2"]
 
 [project.scripts]
-mdx-printkit = "mdx_printkit.cli:main"
+mdx-printkit = "mdx_printkit.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

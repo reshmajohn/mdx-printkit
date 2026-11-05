@@ -74,3 +74,9 @@ Results:
 - Both private input checksums remain unchanged. The extension input's SHA-256 is `0e9e4537c8fab1521f178a8db4df2c82158a0d747ccef865c4af30eaaf50b387`.
 
 Font changes naturally affect line wrapping. System fallbacks from the original Hugging Face stack remain available for glyphs absent from the bundled fonts.
+
+## README and entry-point cleanup
+
+The README was reduced from 113 to 46 lines; detailed usage, caching, typography, limits, and troubleshooting moved to `docs/USAGE.md`. CLI parsing and module startup now share `mdx_printkit/__main__.py`, removing `cli.py`. The installed console-script target was updated and refreshed with `.venv/bin/pip install -e . --no-deps`.
+
+The full suite passed again: **60 tests**, including default output location, media processing, and embedded-font checks. Both the installed command and `.venv/bin/python -m mdx_printkit` displayed help successfully from outside the checkout. Documentation links and `git diff --check` passed. The default output remains `./output/<input-stem>.pdf` relative to the current working directory; no output-path behavior was changed.

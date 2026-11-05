@@ -1,7 +1,7 @@
 # Technical design — MDX PrintKit v1
 
 ## Stack and approach
-Use Python 3.11+ and an installable `pyproject.toml` with a console-script entry point `mdx-printkit = mdx_printkit.cli:main`. Keep dependencies light and maintained:
+Use Python 3.11+ and an installable `pyproject.toml` with a console-script entry point `mdx-printkit = mdx_printkit.__main__:main`. Keep dependencies light and maintained:
 
 - `markdown-it-py` for Markdown parsing/rendering with HTML enabled for the supported HTML subset; optionally enable table/strikethrough features if necessary.
 - `beautifulsoup4` for DOM-level asset transformations and tolerant handling of real-world HTML such as non-self-closing `<img>` tags.
@@ -23,7 +23,7 @@ Pin appropriate compatible dependency ranges in `pyproject.toml` (avoid unreview
 7. **PDF:** launch Playwright Chromium, navigate to the local `file://` HTML path, use print media, wait for local image decoding, explicitly load and validate every bundled font face, await `document.fonts.ready`, and print with PDF format Letter/A4 and consistent margins. Missing/corrupt fonts are fatal instead of silently falling back. No external page resources are needed or permitted at render time.
 8. **Report:** save finished PDF to requested path, print a summary/warnings; clean temporary files, leave persistent cache alone.
 
-Prefer clean small functions and dataclasses/typed results for warnings/asset metadata. A suggested package split (not mandatory): `cli.py`, `convert.py`, `assets.py`, `gif.py`, `render.py`, `styles.css`.
+Prefer clean small functions and dataclasses/typed results for warnings/asset metadata. The CLI and module startup share `__main__.py`. Conversion orchestration, document transformation, asset handling, GIF processing, rendering, and typography each have one module; shared exceptions stay in `errors.py` to avoid circular imports.
 
 The package now lives directly at `mdx_printkit/`, with explicit setuptools discovery. `typography.py` copies the bundled faces into each isolated render directory. Package data includes the print CSS, seven unmodified TrueType font files, both font licenses, and font provenance/checksums. The CLI entry point and Python import name are unchanged.
 

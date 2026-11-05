@@ -1,6 +1,6 @@
 import pytest
 
-from mdx_printkit.cli import main
+from mdx_printkit.__main__ import main
 from mdx_printkit.convert import convert
 from mdx_printkit.errors import PrintKitError
 
