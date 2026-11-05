@@ -63,9 +63,9 @@ h2 { font-size: 16pt; }
 h3 { font-size: 13pt; }
 h4, h5, h6 { font-size: 11pt; }
 a { color: #242424; text-decoration: underline; overflow-wrap: anywhere; }
-img { display: inline-block; max-width: 100%; max-height: 8.3in; width: auto; height: auto; object-fit: contain; vertical-align: middle; break-inside: avoid; }
+img { display: inline-block; margin: 0.75em 0; max-width: 100%; max-height: 8.3in; width: auto; height: auto; object-fit: contain; vertical-align: middle; break-inside: avoid; }
 .center { text-align: center; }
-figure { margin: 0.8em 0 1em; break-inside: avoid; }
+figure { margin: 1.25em 0; break-inside: avoid; }
 .frames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9pt; text-align: center; }
 .count-1 { grid-template-columns: minmax(0, 1fr); }
 .frames > div { min-width: 0; }
