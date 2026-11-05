@@ -1,0 +1,9 @@
+# Runtime and verification dependencies; install the editable project as well.
+markdown-it-py>=4,<5
+beautifulsoup4>=4.13,<5
+nh3>=0.3,<0.4
+Pillow>=12,<14
+playwright>=1.55,<2
+pytest>=8,<10
+pypdf>=6,<7
+PyMuPDF>=1.26,<2

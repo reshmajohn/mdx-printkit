@@ -20,6 +20,9 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 | GIF compositing | Transparent moving-object/disposal fixture with differing durations | No black/transparent glitches; representative temporal sampling |
 | GIF static | Single-frame GIF | One image rather than four redundant frames |
 | PDF | Output from Playwright | Valid PDF with embedded visual content and selectable text |
+| Typography | Regular, semibold, bold, italic, and code text in an offline PDF | Extracted text uses the expected Source Sans Pro / IBM Plex Mono PostScript names and the PDF contains nonempty embedded TrueType streams |
+| Typography | Missing or corrupt bundled font | Rendering fails explicitly instead of silently using a fallback |
+| Packaging | Built wheel and isolated installation | CSS, seven font files, both original font licenses, and provenance are present; conversion works outside the source checkout |
 | Print | Long title, tall/wide image, long code line | No obvious clipping or severe layout corruption |
 | Safety | `<script>`, `onerror`, `javascript:` URL, unsupported custom JSX | No execution; warnings/placeholder as applicable; no external renderer fetch |
 
@@ -52,6 +55,8 @@ Make a **local, synthetic** `.mdx` fixture containing each of:
 Generate a small animated GIF with at least 8 visually distinct frames and one repeated frame. Confirm all three references render storyboards, with up to four *visually distinct* frames, rather than a static broken GIF. Use an uneven frame-duration fixture to test time-based sampling.
 
 As an **optional live integration test**, make a throwaway local `.mdx` containing the user-provided Hugging Face `self_driving_gif.gif` URL as a Markdown link and confirm it is downloaded and rendered. Avoid hardcoding network dependence into CI tests.
+
+When the private `reference-input/extension-image.mdx` is present, convert it online and again from cache with `--offline`. It includes nine image references, four of which are animated GIFs. Verify four labeled, distinct frames per GIF, embedded font identities, original media order, and readable layout. Keep the input and fetched course assets unchanged and outside version control.
 
 ## Final manual review
 - Open or render at least the first page and one page containing a GIF storyboard; check typography, margins, captions, and alignment.

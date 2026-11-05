@@ -17,6 +17,7 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 - Default output path: `./output/<input-stem>.pdf` relative to current working directory; create `output` when needed. `--output` overrides this with a full or relative path.
 - Default page size: US Letter; switchable to A4 with `--paper a4`.
 - Clean, white, legible layout with heading hierarchy, modest margins, clickable hyperlinks, readable monospace/code blocks, centered images where appropriate, and image aspect ratios preserved.
+- Bundle Source Sans Pro Regular 400, SemiBold 600, Bold 700, and Italic 400 for body text and headings. Use 11pt body text with 1.5 line spacing and the original Hugging Face fallback stack. Use IBM Plex Mono only for code blocks and inline code. Load local font files through `@font-face`, preserve their licenses, embed used fonts in PDFs, and verify the actual PDF font identities. Conversion must not need a font download or system font installation.
 - Avoid cut-off text and images, stranded headings, splitting a figure/storyboard across pages when feasible, and an excessive number of nearly empty pages.
 - Preserve paragraphs' original order and the document's title/content; no cover page, table of contents, or decorative branding required.
 

@@ -19,11 +19,13 @@ Pin appropriate compatible dependency ranges in `pyproject.toml` (avoid unreview
 3. **Normalize/sanitize:** parse rendered HTML into a DOM. Remove script/iframe/style/event-handler/unsafe URL content and detect obvious MDX-only code or components; preserve ordinary text with warnings. Keep only sanitized markup in the printable document.
 4. **Resolve assets:** walk image tags and direct links with a `.gif` path. Download supported HTTP(S) raster assets into a persistent cache; resolve relative local files against input file parent. Do not dereference arbitrary external hyperlinks. MIME sniff/verify image contents and use bounded downloads.
 5. **Transform GIFs:** decode animated images, sample up to N temporally distributed, composited frames; write PNGs under a temporary render assets directory; replace image or direct GIF link with a `figure.gif-storyboard` containing frames and labels. Preserve a human-readable indication of the original hyperlink/alt text.
-6. **Build HTML:** wrap sanitized content and rewritten relative, local asset paths in one minimal print template + local CSS; create a local HTML file in the same working tree as the copied/converted assets.
-7. **PDF:** launch Playwright Chromium, navigate to the local `file://` HTML path, use print media, wait for local image decoding, print with PDF format Letter/A4 and consistent margins. No external page resources are needed or permitted at render time.
+6. **Build HTML:** wrap sanitized content and rewritten relative, local asset paths in one minimal print template + local CSS; create a local HTML file in the same working tree as the copied/converted assets. Copy the packaged fonts into that temporary tree for local `@font-face` loading. Permit only local fonts in the document's content security policy.
+7. **PDF:** launch Playwright Chromium, navigate to the local `file://` HTML path, use print media, wait for local image decoding, explicitly load and validate every bundled font face, await `document.fonts.ready`, and print with PDF format Letter/A4 and consistent margins. Missing/corrupt fonts are fatal instead of silently falling back. No external page resources are needed or permitted at render time.
 8. **Report:** save finished PDF to requested path, print a summary/warnings; clean temporary files, leave persistent cache alone.
 
 Prefer clean small functions and dataclasses/typed results for warnings/asset metadata. A suggested package split (not mandatory): `cli.py`, `convert.py`, `assets.py`, `gif.py`, `render.py`, `styles.css`.
+
+The package now lives directly at `mdx_printkit/`, with explicit setuptools discovery. `typography.py` copies the bundled faces into each isolated render directory. Package data includes the print CSS, seven unmodified TrueType font files, both font licenses, and font provenance/checksums. The CLI entry point and Python import name are unchanged.
 
 ## Asset fetching/cache
 - Cache directory: user-specific standard cache (`~/.cache/mdx-printkit` on macOS/Linux is acceptable for v1; platform-specific cache via `platformdirs` is nicer). Use a URL hash for names so query strings/duplicate basenames do not collide.
@@ -43,7 +45,8 @@ Prefer clean small functions and dataclasses/typed results for warnings/asset me
 - A direct Markdown `.gif` link should become a storyboard (not just remain a link); normal document hyperlinks remain normal links.
 
 ## Print CSS
-- White page, near-black text, 11–12 pt comfortable body type, line-height ~1.4–1.55; heading sizes ~18/15/13 pt.
+- White page, near-black text, Source Sans Pro at 11pt/1.5; heading sizes 21/16/13pt with 700 weight for H1/H2 and 600 for H3-H6. Regular, semibold, bold, and italic use separate bundled font files. Code alone uses IBM Plex Mono at 9pt. Captions and placeholders inherit Source Sans Pro.
+- Retain the exact Hugging Face text fallback stack: `"Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`. System fallbacks may supply glyphs outside the bundled fonts' coverage.
 - Use `@page` margins ~0.6–0.7 in and Playwright PDF's `format` setting for Letter/A4; do not accidentally conflict on paper sizing.
 - Responsive image sizing (`max-width: 100%; height: auto`), centered images, avoid overflow.
 - Use `break-after: avoid` on headings and `break-inside: avoid` on figures/storyboards where feasible; storyboards should not cause huge blank gaps.

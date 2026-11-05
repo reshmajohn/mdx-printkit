@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdx-printkit"
+version = "0.1.0"
+description = "Print local Markdown and MDX with embedded images and GIF storyboards."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "markdown-it-py>=4,<5",
+  "beautifulsoup4>=4.13,<5",
+  "nh3>=0.3,<0.4",
+  "Pillow>=12,<14",
+  "playwright>=1.55,<2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "pypdf>=6,<7", "PyMuPDF>=1.26,<2"]
+
+[project.scripts]
+mdx-printkit = "mdx_printkit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mdx_printkit"]
+namespaces = false
+
+[tool.setuptools.package-data]
+mdx_printkit = ["styles.css", "fonts/*/*.ttf", "fonts/*/*.txt", "fonts/README.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["pdf: requires installed Playwright Chromium"]
