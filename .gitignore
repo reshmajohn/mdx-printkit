@@ -1,0 +1,9 @@
+.DS_Store
+reference-input/
+.venv/
+__pycache__/
+.pytest_cache/
+.cache/
+output/
+*.pdf
+.env*
