@@ -14,7 +14,7 @@ Use Python 3.11+ and an installable `pyproject.toml` with a console-script entry
 Pin appropriate compatible dependency ranges in `pyproject.toml` (avoid unreviewed strict old versions). If a library detail differs from this sketch, use its current documented API.
 
 ## Processing pipeline
-1. **CLI and source:** validate the local `.md`/`.mdx` path, read as UTF-8, decide PDF destination, build a temporary working directory for rendering.
+1. **CLI and source:** `file` validates a local `.md`/`.mdx` path and defaults to a PDF beside it. `folder` enumerates direct `.mdx` files in filename order, validates output destinations, and invokes the same conversion pipeline sequentially. Its `--output` override is a directory; each file keeps its stem. Both commands share paper, GIF frame count, and offline options. Individual folder failures are reported while remaining files continue. For each file, read UTF-8 and build a temporary working directory for rendering.
 2. **Parse:** Markdown -> HTML using `markdown-it-py` with raw HTML support. Do NOT regex-rewrite the raw Markdown; this would corrupt code fences or literal examples. Support embedded HTML as actual HTML.
 3. **Normalize/sanitize:** parse rendered HTML into a DOM. Remove script/iframe/style/event-handler/unsafe URL content and detect obvious MDX-only code or components; preserve ordinary text with warnings. Keep only sanitized markup in the printable document.
 4. **Resolve assets:** walk image tags and direct links with a `.gif` path. Download supported HTTP(S) raster assets into a persistent cache; resolve relative local files against input file parent. Do not dereference arbitrary external hyperlinks. MIME sniff/verify image contents and use bounded downloads.

@@ -9,21 +9,80 @@ from mdx_printkit.render import render_pdf
 pytestmark = pytest.mark.pdf
 
 
-def test_default_pdf_relative_path_spaces_and_source_unchanged(tmp_path, png, monkeypatch, chromium, capsys):
+@pytest.mark.parametrize("prefix", [[], ["file"], ["--offline"]])
+def test_default_pdf_relative_path_spaces_and_source_unchanged(tmp_path, png, monkeypatch, chromium, capsys, prefix):
     source = tmp_path / "my notes.mdx"
     original = "# Printable notes\n\nSelectable content.\n\n![Diagram](a%20diagram.png)"
     source.write_text(original, encoding="utf-8")
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(elsewhere)
-    assert main(["../my notes.mdx"]) == 0
+    assert main([*prefix, "../my notes.mdx"]) == 0
     assert "1 image(s)" in capsys.readouterr().out
-    output = elsewhere / "output" / "my notes.pdf"
+    output = source.with_suffix(".pdf")
+    assert not (elsewhere / "output").exists()
     reader = PdfReader(output)
     assert "Selectable content" in reader.pages[0].extract_text()
     assert len(reader.pages[0].images) >= 1
     assert float(reader.pages[0].mediabox.width) == pytest.approx(612, abs=1)
     assert source.read_text() == original
+
+
+@pytest.mark.parametrize("custom_output,frames", [(False, 4), (True, 6)])
+def test_folder_pdfs_defaults_options_and_source_selection(
+    tmp_path, png, animated_gif, monkeypatch, chromium, capsys, custom_output, frames
+):
+    folder = tmp_path / "course notes"
+    folder.mkdir()
+    sources = {
+        "01 intro.mdx": "# First document\n\n![Diagram](../a%20diagram.png)",
+        "02 motion.MDX": "# Second document\n\n![Movement](../moving.gif)",
+    }
+    for name, content in sources.items():
+        (folder / name).write_text(content, encoding="utf-8")
+    (folder / "ignored.md").write_text("# Ignored", encoding="utf-8")
+    nested = folder / "nested"
+    nested.mkdir()
+    (nested / "ignored.mdx").write_text("# Nested", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    arguments = ["folder", "../course notes", "--paper", "a4", "--offline"]
+    output = folder
+    if custom_output:
+        arguments.extend(["--output", "../prints", "--gif-frames", str(frames)])
+        output = tmp_path / "prints"
+    assert main(arguments) == 0
+    stdout = capsys.readouterr().out
+    assert "2 succeeded, 0 failed" in stdout
+    assert stdout.index("01 intro.pdf") < stdout.index("02 motion.pdf")
+    first = PdfReader(output / "01 intro.pdf")
+    second = PdfReader(output / "02 motion.pdf")
+    assert "First document" in first.pages[0].extract_text()
+    assert len(first.pages[0].images) == 1
+    text = "\n".join(page.extract_text() for page in second.pages)
+    assert f"Frame 1/{frames}" in text and f"Frame {frames}/{frames}" in text
+    assert sum(len(page.images) for page in second.pages) >= frames
+    assert float(first.pages[0].mediabox.width) == pytest.approx(595.28, abs=1)
+    assert float(second.pages[0].mediabox.width) == pytest.approx(595.28, abs=1)
+    assert sorted(path.name for path in output.glob("*.pdf")) == ["01 intro.pdf", "02 motion.pdf"]
+    assert not (nested / "ignored.pdf").exists()
+    assert not (elsewhere / "output").exists()
+    for name, content in sources.items():
+        assert (folder / name).read_text(encoding="utf-8") == content
+
+
+def test_folder_continues_after_failure_and_keeps_previous_pdf(tmp_path, chromium, capsys):
+    (tmp_path / "01 bad.mdx").write_bytes(b"\xff\xfe")
+    (tmp_path / "02 good.mdx").write_text("# Valid document", encoding="utf-8")
+    previous = tmp_path / "01 bad.pdf"
+    previous.write_bytes(b"previous PDF")
+    assert main(["folder", str(tmp_path), "--offline"]) == 1
+    captured = capsys.readouterr()
+    assert "01 bad.mdx" in captured.err
+    assert "1 succeeded, 1 failed" in captured.out
+    assert "Valid document" in PdfReader(tmp_path / "02 good.pdf").pages[0].extract_text()
+    assert previous.read_bytes() == b"previous PDF"
 
 
 @pytest.mark.parametrize("frames", [1, 4, 6])

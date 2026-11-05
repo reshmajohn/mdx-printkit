@@ -1,6 +1,6 @@
 # MDX PrintKit
 
-Convert a local Markdown or MDX file into a printable PDF with embedded images. Animated GIFs become storyboards of up to four distinct frames. PDFs use bundled Source Sans Pro for text and IBM Plex Mono for code, and can be opened offline.
+Convert local Markdown or MDX files into printable PDFs with embedded images, one file or a folder at a time. Animated GIFs become storyboards of up to four distinct frames. PDFs use bundled Source Sans Pro for text and IBM Plex Mono for code, and can be opened offline.
 
 ## Install
 
@@ -18,15 +18,15 @@ If `.venv` already exists, skip the first command.
 ## Use
 
 ```bash
-mdx-printkit "path/to/notes.mdx"
-mdx-printkit notes.md --output "prints/Notes.pdf" --paper a4
-mdx-printkit notes.mdx --gif-frames 6
-mdx-printkit notes.mdx --offline
+mdx-printkit file "path/to/notes.mdx"
+mdx-printkit file notes.md --output "prints/Notes.pdf" --paper a4
+mdx-printkit folder "path/to/course"
+mdx-printkit folder "path/to/course" --output prints --paper a4 --gif-frames 6 --offline
 ```
 
-By default, PDFs go to `./output/<input-stem>.pdf`, relative to the directory where you run the command. `--output` selects another destination. The source file stays unchanged.
+PDFs go beside their source files: `course/notes.mdx` becomes `course/notes.pdf`. `file --output` selects a PDF path; `folder --output` selects a directory. Folder conversion processes `.mdx` files directly in that folder, with one PDF per file. Source files stay unchanged.
 
-US Letter and four GIF frames are the defaults. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. Run `mdx-printkit --help` for all options.
+Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. Run `mdx-printkit file --help` or `mdx-printkit folder --help` for options.
 
 ## What it supports
 

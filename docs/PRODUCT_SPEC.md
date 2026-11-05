@@ -6,6 +6,7 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 ## Scope
 ### Input
 - A **local file path** to a UTF-8 `.md` or `.mdx` document; CLI must give an actionable error for missing/unreadable/unsupported input.
+- A folder command accepts a local directory and converts each direct `.mdx` file into a separate PDF. Subfolders and `.md` files are excluded; extension matching is case-insensitive.
 - The file may contain ordinary Markdown: headings, paragraphs, emphasis, links, lists, blockquotes, fenced code, inline code, tables, horizontal rules.
 - It may also contain modest embedded HTML, especially `<div class="flex justify-center">` and `<img src="..." alt="...">` from `reference-input/motivation.mdx`.
 - Support standard Markdown image syntax `![alt](path-or-url)`, HTML `<img src="...">`, and direct Markdown links `[animation](path-or-url.gif)` / `[https://...gif](https://...gif)`.
@@ -14,7 +15,7 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 
 ### Output
 - A portable **PDF with actual image bytes embedded**, no need for internet to view or print it.
-- Default output path: `./output/<input-stem>.pdf` relative to current working directory; create `output` when needed. `--output` overrides this with a full or relative path.
+- Default output path: `<source-directory>/<input-stem>.pdf`, beside the source. For `file`, `--output` selects a full or relative PDF path. For `folder`, it selects an output directory; the default is the input folder. Create missing destination directories when needed.
 - Default page size: US Letter; switchable to A4 with `--paper a4`.
 - Clean, white, legible layout with heading hierarchy, modest margins, clickable hyperlinks, readable monospace/code blocks, centered images where appropriate, and image aspect ratios preserved.
 - Bundle Source Sans Pro Regular 400, SemiBold 600, Bold 700, and Italic 400 for body text and headings. Use 11pt body text with 1.5 line spacing and the original Hugging Face fallback stack. Use IBM Plex Mono only for code blocks and inline code. Load local font files through `@font-face`, preserve their licenses, embed used fonts in PDFs, and verify the actual PDF font identities. Conversion must not need a font download or system font installation.
@@ -42,6 +43,8 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 ### CLI
 Required flags: `--output PATH`, `--paper {letter,a4}`, `--gif-frames N`, `--offline`, `--help`. A clear `--version` is useful but optional.
 
+Commands: `mdx-printkit file PATH` converts one `.md`/`.mdx`; `mdx-printkit folder DIR` converts direct `.mdx` files in filename order. Both accept all conversion flags. The original `mdx-printkit PATH` invocation remains a single-file shorthand. Folder output is one PDF per source, without combining documents. Reject colliding destinations before writing. Continue after individual conversion failures, report success/failure counts, and return nonzero if any file fails or the folder is invalid/empty.
+
 Behavior:
 - Print destination and a concise status summary (image count, GIF count, warnings).
 - Exit nonzero for CLI errors, unreadable input, fatal renderer/browser errors, invalid arguments; missing individual images should warn but not make an otherwise valid PDF fail.
@@ -49,7 +52,7 @@ Behavior:
 - Preserve input unchanged. Avoid writing downloaded files or temporary HTML into the input directory.
 
 ## Non-goals for the first release
-No GUI, no drag-and-drop, no batch-folder CLI, no URL-to-MDX fetch, no live web-service hosting, no automatic screenshot of React widgets, no cloud infrastructure, no OCR, no LLM calls, and no user accounts.
+No GUI, no drag-and-drop, no recursive folder scanning, no URL-to-MDX fetch, no live web-service hosting, no automatic screenshot of React widgets, no cloud infrastructure, no OCR, no LLM calls, and no user accounts.
 
 ## Acceptance summary
 `motivation.mdx` yields legible, correct-order text plus its three PNG images. A test MDX with a remote or local GIF yields up to four correctly ordered representative frames. Broken remote images show a diagnostic placeholder, not a blank hole. The PDF opens without network access.

@@ -6,8 +6,12 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 
 | Area | Test | Pass condition |
 |---|---|---|
-| CLI | Local `.mdx` absolute/relative path, including spaces | Works; default `./output/<stem>.pdf` exists; source not changed |
+| CLI | Local `.mdx` absolute/relative path, including spaces | Works via `file` and original shorthand; default `<source-directory>/<stem>.pdf` exists independently of shell directory; source not changed |
 | CLI | `--output`, `--paper a4`, `--gif-frames 1/4/6`, invalid N | Correct output/behavior; invalid N fails helpfully |
+| Folder CLI | Two direct `.mdx` / `.MDX` inputs, nested MDX and adjacent `.md` | Exactly two PDFs in the input folder by default, in filename order; nested and `.md` inputs excluded |
+| Folder CLI | Alternate output directory, A4, GIF frame count, offline | One PDF per direct MDX in the override directory; all shared options honored and source-relative images preserved |
+| Folder CLI | Empty/missing/non-directory input, file as output directory, colliding PDF destinations | Helpful nonzero failure; destination collisions detected before writing |
+| Folder CLI | Unreadable document followed by a valid document | Valid file still converts; nonzero exit and success/failure summary; previous PDF for failed document preserved |
 | Markdown | Headings, paragraphs, lists, code fences, link, table | Print HTML contains content in correct order; code fence isn't parsed as HTML |
 | HTML | `<div class="flex justify-center"><img src="..." alt="..."></div>` | Image is resolved, centered, scaled; alt description preserved |
 | Markdown image | `![sample](local.png)` | Image appears and relative path resolves against input-file location |
@@ -35,7 +39,7 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 When internet access is available, run:
 
 ```bash
-mdx-printkit reference-input/motivation.mdx --output output/motivation.pdf
+mdx-printkit file reference-input/motivation.mdx --output output/motivation.pdf
 ```
 
 Confirm all three images actually appear, the section order is unchanged, paragraphs and images don't clip, and the PDF opens without internet. Don't count merely producing a nonempty PDF as sufficient validation.

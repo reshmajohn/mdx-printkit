@@ -27,8 +27,7 @@ def convert(source: Path | str, output: Path | str | None = None, *, paper: str 
         raise PrintKitError("GIF frame count must be between 1 and 12")
     if paper not in {"letter", "a4"}:
         raise PrintKitError("paper must be 'letter' or 'a4'")
-    destination = (Path(output).expanduser() if output is not None else
-                   Path.cwd() / "output" / f"{source.stem}.pdf").resolve()
+    destination = (Path(output).expanduser() if output is not None else source.with_suffix(".pdf")).resolve()
     if destination == source:
         raise PrintKitError("output must not overwrite the input document")
     if destination.suffix.lower() != ".pdf":

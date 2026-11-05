@@ -9,7 +9,13 @@ def test_help_and_version(capsys):
     with pytest.raises(SystemExit) as result:
         main(["--help"])
     assert result.value.code == 0
-    assert "--gif-frames" in capsys.readouterr().out
+    help_text = capsys.readouterr().out
+    assert "file" in help_text and "folder" in help_text
+    for command in ["file", "folder"]:
+        with pytest.raises(SystemExit) as result:
+            main([command, "--help"])
+        assert result.value.code == 0
+        assert "--gif-frames" in capsys.readouterr().out
     with pytest.raises(SystemExit) as result:
         main(["--version"])
     assert result.value.code == 0
@@ -19,7 +25,11 @@ def test_help_and_version(capsys):
 @pytest.mark.parametrize("arguments", [["a.mdx", "--gif-frames", "0"],
                                       ["a.mdx", "--gif-frames", "13"],
                                       ["a.mdx", "--gif-frames", "abc"],
-                                      ["a.mdx", "--paper", "legal"], []])
+                                      ["a.mdx", "--paper", "legal"],
+                                      ["file", "a.mdx", "--gif-frames", "0"],
+                                      ["folder", ".", "--gif-frames", "13"],
+                                      ["folder", ".", "--paper", "legal"],
+                                      ["file"], ["folder"], []])
 def test_invalid_options(arguments):
     with pytest.raises(SystemExit) as result:
         main(arguments)
@@ -75,3 +85,38 @@ def test_missing_browser_action(tmp_path, monkeypatch):
     monkeypatch.setattr("mdx_printkit.render.sync_playwright", fail)
     with pytest.raises(PrintKitError, match=r"\.venv/bin/python -m playwright install chromium"):
         render_pdf(tmp_path / "input.html", tmp_path / "out.pdf")
+
+
+@pytest.mark.parametrize("case", ["missing", "not-directory", "empty", "output-file"])
+def test_folder_validation(tmp_path, capsys, case):
+    folder = tmp_path / "course"
+    folder.mkdir()
+    arguments = ["folder", str(folder)]
+    if case == "missing":
+        arguments[1] = str(tmp_path / "missing")
+    elif case == "not-directory":
+        source = folder / "notes.mdx"
+        source.write_text("# Notes", encoding="utf-8")
+        arguments[1] = str(source)
+    elif case == "output-file":
+        (folder / "notes.mdx").write_text("# Notes", encoding="utf-8")
+        output = tmp_path / "existing.pdf"
+        output.write_bytes(b"existing")
+        arguments.extend(["--output", str(output)])
+    assert main(arguments) == 1
+    assert "Error:" in capsys.readouterr().err
+    assert not (folder / "notes.pdf").exists()
+
+
+def test_folder_rejects_colliding_destinations_before_writing(tmp_path, capsys):
+    folder = tmp_path / "course"
+    folder.mkdir()
+    for stem in ["one", "two"]:
+        (folder / f"{stem}.mdx").write_text(f"# {stem}", encoding="utf-8")
+    shared = tmp_path / "shared.pdf"
+    shared.write_bytes(b"previous PDF")
+    for stem in ["one", "two"]:
+        (folder / f"{stem}.pdf").symlink_to(shared)
+    assert main(["folder", str(folder)]) == 1
+    assert "collision" in capsys.readouterr().err
+    assert shared.read_bytes() == b"previous PDF"
