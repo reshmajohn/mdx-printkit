@@ -21,7 +21,7 @@ mdx-printkit folder "my course" --output "course prints" --paper a4 --gif-frames
 
 Each input gets its own `<input-stem>.pdf` in the input folder by default. For `folder`, `--output` selects an output directory, created when needed. Relative overrides resolve from the current shell directory. Subfolders and `.md` files are excluded; `.MDX` extensions are accepted. Files run sequentially in filename order. If an individual conversion fails, the remaining files are still attempted; the final summary reports successes/failures and the command exits nonzero if any failed. Empty or invalid folders fail with an explanation. Colliding PDF destinations are rejected before conversion begins.
 
-Both commands support `--paper {letter,a4}`, `--gif-frames N` (1–12), and `--offline`. A successful conversion replaces an existing destination; a failed render leaves it intact. Source files are never changed, and temporary rendering files are kept outside the input directory.
+Both commands support `--paper {letter,a4}`, `--gif-frames N` (1–12), `--font`, and `--offline`. A successful conversion replaces an existing destination; a failed render leaves it intact. Source files are never changed, and temporary rendering files are kept outside the input directory.
 
 Missing individual images produce placeholders and warnings while conversion continues. Invalid arguments, unreadable input, browser failures, and broken bundled fonts return a nonzero exit status. The final summary counts successfully rendered image occurrences, animated GIF occurrences, and unique warnings.
 
@@ -51,11 +51,28 @@ Downloads persist in `~/.cache/mdx-printkit/`, keyed by URL including query para
 
 ## Typography
 
-Body text is Source Sans Pro at 11pt with 1.5 line spacing. Headings use bold or semibold at 21/16/13pt. Regular, semibold, bold, and italic faces are bundled locally. Code blocks and inline code use IBM Plex Mono.
+Body text defaults to Source Sans Pro at 11pt with 1.5 line spacing. Headings use bold or semibold at 21/16/13pt. Its regular, semibold, bold, and italic faces are bundled locally. `--font` changes body text and headings for either command; code blocks and inline code always use bundled IBM Plex Mono.
 
-CSS `@font-face` rules load packaged fonts without a system installation or runtime download. The renderer checks every face and waits for font layout before printing; missing or corrupt fonts cause an explicit error. Used fonts are embedded as PDF subsets. Glyphs outside their coverage may use system fonts from the original Hugging Face fallback stack.
+| `--font` value | Family | Source |
+| --- | --- | --- |
+| `source-sans-pro` | Source Sans Pro (default) | Bundled with the tool |
+| `arial` | Arial | Installed system font |
+| `helvetica` | Helvetica | Installed system font |
+| `verdana` | Verdana | Installed system font |
+| `georgia` | Georgia | Installed system font |
+| `times-new-roman` | Times New Roman | Installed system font |
+| `palatino` | Palatino | Installed system font |
 
-Both families retain their SIL Open Font License 1.1 and copyright notices. See [font provenance and licenses](../mdx_printkit/fonts/README.md) for pinned revisions, download URLs, and checksums. Application code has no license pending the owner's choice.
+```bash
+mdx-printkit file notes.mdx --font times-new-roman
+mdx-printkit folder course --font arial --output prints
+```
+
+System fonts use local CSS `@font-face` sources, with no copying, redistribution, or downloads of OS font files. Availability varies by computer and OS. Regular, bold, and italic styles are required; semibold headings use the system font's bold face. If the chosen family or a required style is unavailable, conversion fails explicitly; choose another option or omit `--font` to use bundled Source Sans Pro.
+
+The renderer checks the selected text faces and bundled code faces, then waits for font layout before printing. Used fonts are embedded in the PDF. Fonts can change line wrapping and page counts. Glyphs outside a family's coverage may use system fallbacks; the default Source Sans Pro option retains the original Hugging Face fallback stack.
+
+The bundled Source Sans Pro and IBM Plex Mono fonts retain their SIL Open Font License 1.1 and copyright notices. See [font provenance and licenses](../mdx_printkit/fonts/README.md) for pinned revisions, download URLs, and checksums. Application code has no license pending the owner's choice.
 
 ## Limits and document safety
 
@@ -80,6 +97,7 @@ Oversized or unavailable media receive placeholders. SVG, video, remote webpages
 | Command not found | Activate `.venv`, or use `.venv/bin/python -m mdx_printkit`. |
 | Chromium missing | Run `.venv/bin/python -m playwright install chromium`. On Linux, use `install --with-deps chromium` if system libraries are missing. |
 | Bundled fonts missing or unable to load | Reinstall from a complete checkout with `.venv/bin/pip install -e .`, or reinstall the wheel. Keep the packaged `fonts/` directory intact. |
+| Selected system font unavailable | Choose another installed family or omit `--font` to use Source Sans Pro. The tool does not download system fonts or silently substitute another family. |
 | Image unavailable | Read the warning for its path, HTTP status, timeout, format, size limit, or blocked address. Use a local raster copy for authenticated or private-network images. |
 | Stale remote image | Remove its cache entry, or clear the tool's cache, and rerun online. |
 | Unexpected MDX output | Replace custom components with ordinary Markdown/HTML. Fenced code examples remain literal. |

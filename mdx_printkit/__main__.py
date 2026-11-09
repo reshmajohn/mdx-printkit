@@ -7,6 +7,7 @@ import sys
 from . import __version__
 from .convert import ConversionResult, convert
 from .errors import PrintKitError
+from .typography import DEFAULT_FONT, FONT_NAMES
 
 
 def frame_count(value: str) -> int:
@@ -53,7 +54,7 @@ def convert_folder(args: argparse.Namespace) -> int:
     for source in sources:
         try:
             result = convert(source, output / f"{source.stem}.pdf", paper=args.paper,
-                             gif_frames=args.gif_frames, offline=args.offline)
+                             gif_frames=args.gif_frames, offline=args.offline, font=args.font)
             report(result)
             succeeded += 1
         except PrintKitError as exc:
@@ -74,6 +75,9 @@ def main(argv: list[str] | None = None) -> int:
     options.add_argument("--gif-frames", type=frame_count, default=4, metavar="N",
                          help="maximum distinct GIF frames, 1-12 (default: 4)")
     options.add_argument("--offline", action="store_true", help="use local images and cached downloads only")
+    options.add_argument("--font", choices=FONT_NAMES, default=DEFAULT_FONT,
+                         help="body and heading font (default: Source Sans Pro, bundled). "
+                              "The six alternatives use installed system fonts; code stays IBM Plex Mono.")
     commands = parser.add_subparsers(dest="command", required=True)
     file_command = commands.add_parser("file", parents=[options], help="convert one .md or .mdx file")
     file_command.add_argument("source", help="local UTF-8 .md or .mdx file")
@@ -90,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "folder":
             return convert_folder(args)
         result = convert(args.source, args.output, paper=args.paper, gif_frames=args.gif_frames,
-                         offline=args.offline)
+                         offline=args.offline, font=args.font)
     except (PrintKitError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

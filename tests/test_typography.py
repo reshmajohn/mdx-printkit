@@ -1,10 +1,11 @@
 from importlib.resources import files
 
 from bs4 import BeautifulSoup
+import pytest
 
 from mdx_printkit.assets import AssetResolver
 from mdx_printkit.document import build_document
-from mdx_printkit.typography import FONT_FACES
+from mdx_printkit.typography import DEFAULT_FONT, FONT_FACES, FONT_NAMES, font_css
 
 
 def test_bundled_fonts_and_licenses_are_available(tmp_path):
@@ -18,3 +19,20 @@ def test_bundled_fonts_and_licenses_are_available(tmp_path):
     soup = BeautifulSoup(document.html, "html.parser")
     assert "font-src file:" in soup.find("meta", attrs={"http-equiv": "Content-Security-Policy"})["content"]
     assert not soup.select("link[href^='http']")
+
+
+@pytest.mark.parametrize("font", [key for key in FONT_NAMES if key != DEFAULT_FONT])
+def test_system_font_document_uses_local_faces_and_keeps_code_bundled(tmp_path, font):
+    document = build_document("# Typography\n\nBody and `code`", AssetResolver(tmp_path, offline=True),
+                              tmp_path, font=font)
+    css = font_css(font)
+    assert f'font-family: "PrintKit {FONT_NAMES[font]}"' in css
+    assert "local(" in css and "url(" not in css
+    assert not (tmp_path / "fonts/source-sans-pro").exists()
+    assert len(list((tmp_path / "fonts/ibm-plex-mono").glob("*.ttf"))) == 3
+    assert css in document.html
+    assert 'pre, code { font-family: "IBM Plex Mono"' in document.html
+
+
+def test_default_font_css_keeps_original_typography():
+    assert font_css() == ""

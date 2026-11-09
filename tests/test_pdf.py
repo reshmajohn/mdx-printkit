@@ -203,3 +203,68 @@ def test_missing_bundled_font_cannot_silently_fall_back(tmp_path, chromium):
     with pytest.raises(PrintKitError, match="Bundled fonts failed to load: Source Sans Pro 400 normal"):
         render_pdf(html, output)
     assert not output.exists()
+
+
+@pytest.mark.parametrize("font,regular,bold,italic", [
+    ("arial", "ArialMT", "Arial-BoldMT", "Arial-ItalicMT"),
+    ("helvetica", "Helvetica", "Helvetica-Bold", "Helvetica-Oblique"),
+    ("verdana", "Verdana", "Verdana-Bold", "Verdana-Italic"),
+    ("georgia", "Georgia", "Georgia-Bold", "Georgia-Italic"),
+    ("times-new-roman", "TimesNewRomanPSMT", "TimesNewRomanPS-BoldMT", "TimesNewRomanPS-ItalicMT"),
+    ("palatino", "Palatino-Roman", "Palatino-Bold", "Palatino-Italic"),
+])
+def test_system_font_pdf_uses_selected_family_and_embeds_it(tmp_path, chromium, font, regular, bold, italic):
+    import pymupdf
+    from playwright.sync_api import sync_playwright
+
+    # Family availability is OS-dependent; probe independently of the app's face aliases.
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            available = browser.new_page().evaluate("""async name => {
+                try { await new FontFace('probe', `local("${name}")`).load(); return true; }
+                catch { return false; }
+            }""", regular)
+        finally:
+            browser.close()
+    if not available:
+        pytest.skip(f"system font {regular} is not installed")
+
+    source = tmp_path / "system-font.mdx"
+    source.write_text("# Bold heading\n\nRegular body sample\n\n### Semibold heading\n\n"
+                      "*Italic body sample*\n\n`inline_code_token`", encoding="utf-8")
+    assert main(["file", str(source), "--font", font, "--offline"]) == 0
+    output = source.with_suffix(".pdf")
+    expected = {"Regular body sample": regular, "Bold heading": bold,
+                "Semibold heading": bold, "Italic body sample": italic,
+                "inline_code_token": "IBMPlexMono-Regular"}
+    with pymupdf.open(output) as pdf:
+        spans = [span for page in pdf for block in page.get_text("dict")["blocks"]
+                 if "lines" in block for line in block["lines"] for span in line["spans"]]
+        for text, name in expected.items():
+            matches = [span for span in spans if text in span["text"]]
+            assert matches and all(span["font"] == name for span in matches), (text, matches)
+        for span in spans:
+            assert span["font"] in expected.values(), span
+    for page in PdfReader(output).pages:
+        for reference in page["/Resources"]["/Font"].values():
+            resource = reference.get_object()
+            face = resource["/DescendantFonts"][0].get_object() if "/DescendantFonts" in resource else resource
+            descriptor = face["/FontDescriptor"]
+            assert any(descriptor.get(key) and descriptor[key].get_data()
+                       for key in ["/FontFile", "/FontFile2", "/FontFile3"])
+
+
+def test_unavailable_system_font_fails_without_substitution(tmp_path, monkeypatch, chromium):
+    from mdx_printkit.errors import PrintKitError
+    from mdx_printkit.typography import SYSTEM_FACES
+
+    missing = ("PrintKitNonexistentFont019abcdef",)
+    monkeypatch.setitem(SYSTEM_FACES, "arial", (missing, missing, missing))
+    source = tmp_path / "notes.mdx"
+    source.write_text("# Heading\n\nBody", encoding="utf-8")
+    output = source.with_suffix(".pdf")
+    output.write_bytes(b"previous PDF")
+    with pytest.raises(PrintKitError, match="System font Arial is unavailable"):
+        convert(source, font="arial", offline=True)
+    assert output.read_bytes() == b"previous PDF"

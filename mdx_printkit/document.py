@@ -16,7 +16,7 @@ import nh3
 from .assets import AssetResolver, verify_image
 from .errors import AssetError
 from .gif import extract_frames, normalize_image
-from .typography import prepare_fonts
+from .typography import DEFAULT_FONT, font_css, prepare_fonts
 
 TAGS = set("p div span h1 h2 h3 h4 h5 h6 br hr strong em b i s del u sub sup "
            "ul ol li blockquote pre code a img table thead tbody tfoot tr th td "
@@ -103,7 +103,8 @@ def _sanitize(markup: str, report: Document) -> BeautifulSoup:
 
 
 def build_document(source: str, resolver: AssetResolver, work_dir: Path,
-                   *, gif_frames: int = 4, title: str = "Notes") -> Document:
+                   *, gif_frames: int = 4, title: str = "Notes", font: str = DEFAULT_FONT) -> Document:
+    selected_css = font_css(font)
     report = Document()
     soup = _sanitize(_markdown(source, report), report)
     assets = work_dir / "assets"
@@ -195,8 +196,8 @@ def build_document(source: str, resolver: AssetResolver, work_dir: Path,
 
     heading = soup.find("h1")
     title = heading.get_text(" ", strip=True) if heading else title
-    prepare_fonts(work_dir)
-    css = files("mdx_printkit").joinpath("styles.css").read_text(encoding="utf-8")
+    prepare_fonts(work_dir, font)
+    css = files("mdx_printkit").joinpath("styles.css").read_text(encoding="utf-8") + selected_css
     report.html = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; '

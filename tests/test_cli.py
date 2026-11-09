@@ -3,6 +3,7 @@ import pytest
 from mdx_printkit.__main__ import main
 from mdx_printkit.convert import convert
 from mdx_printkit.errors import PrintKitError
+from mdx_printkit.typography import FONT_NAMES
 
 
 def test_help_and_version(capsys):
@@ -15,7 +16,10 @@ def test_help_and_version(capsys):
         with pytest.raises(SystemExit) as result:
             main([command, "--help"])
         assert result.value.code == 0
-        assert "--gif-frames" in capsys.readouterr().out
+        help_text = capsys.readouterr().out
+        assert "--gif-frames" in help_text and "--font" in help_text
+        for font in FONT_NAMES:
+            assert font in "".join(help_text.split())
     with pytest.raises(SystemExit) as result:
         main(["--version"])
     assert result.value.code == 0
@@ -29,6 +33,8 @@ def test_help_and_version(capsys):
                                       ["file", "a.mdx", "--gif-frames", "0"],
                                       ["folder", ".", "--gif-frames", "13"],
                                       ["folder", ".", "--paper", "legal"],
+                                      ["file", "a.mdx", "--font", "missing"],
+                                      ["folder", ".", "--font", "missing"],
                                       ["file"], ["folder"], []])
 def test_invalid_options(arguments):
     with pytest.raises(SystemExit) as result:
@@ -45,7 +51,8 @@ def test_input_errors(tmp_path, capsys):
     assert main([str(tmp_path / "image.png")]) == 1
 
 
-@pytest.mark.parametrize("kwargs", [{"gif_frames": 0}, {"gif_frames": 13}, {"paper": "legal"}])
+@pytest.mark.parametrize("kwargs", [{"gif_frames": 0}, {"gif_frames": 13}, {"paper": "legal"},
+                                   {"font": "missing"}])
 def test_api_validation(tmp_path, kwargs):
     with pytest.raises(PrintKitError):
         convert(tmp_path / "notes.mdx", **kwargs)
@@ -65,7 +72,7 @@ def test_fatal_renderer_keeps_existing_pdf(tmp_path, monkeypatch):
     output = tmp_path / "previous.pdf"
     output.write_bytes(b"previous PDF")
 
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise PrintKitError("Renderer unavailable")
 
     monkeypatch.setattr("mdx_printkit.convert.render_pdf", fail)
@@ -120,3 +127,19 @@ def test_folder_rejects_colliding_destinations_before_writing(tmp_path, capsys):
     assert main(["folder", str(folder)]) == 1
     assert "collision" in capsys.readouterr().err
     assert shared.read_bytes() == b"previous PDF"
+
+
+def test_folder_passes_selected_font_to_each_input(tmp_path, monkeypatch):
+    from mdx_printkit.convert import ConversionResult
+
+    for name in ["one.mdx", "two.mdx"]:
+        (tmp_path / name).write_text("# Document", encoding="utf-8")
+    selected = []
+
+    def record(source, output, **options):
+        selected.append((source.name, options["font"]))
+        return ConversionResult(output, 0, 0, [])
+
+    monkeypatch.setattr("mdx_printkit.__main__.convert", record)
+    assert main(["folder", str(tmp_path), "--font", "georgia"]) == 0
+    assert selected == [("one.mdx", "georgia"), ("two.mdx", "georgia")]

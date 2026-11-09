@@ -86,3 +86,21 @@ The full suite passed again: **60 tests**, including default output location, me
 The default is now `<source-directory>/<input-stem>.pdf`. `mdx-printkit file PATH` converts one Markdown/MDX document; `mdx-printkit folder DIR` converts each direct `.mdx` file into a separate PDF in that folder. The folder `--output` override is a directory. Both commands share paper size, GIF frame count, and offline options. The original single-file invocation, including options before the path, remains supported.
 
 `.venv/bin/python -m pytest -q --tb=short` passed **75 tests** with no skips and the same five PyMuPDF/Python 3.14 deprecation warnings. New actual-PDF checks cover default destinations independent of shell directory; `.mdx`/`.MDX` selection without nested folders or `.md`; custom folder output; A4 and four/six GIF frames; original input preservation; and continuing after a bad UTF-8 document while retaining its previous PDF. Empty/invalid folders and output collisions are checked before conversion. Both installed command help screens work outside the checkout; documentation links and `git diff --check` pass. Both private reference MDX checksums are unchanged.
+
+## Font choices — November 9, 2026
+
+Both `file` and `folder` now accept `--font`, with `source-sans-pro` as the unchanged bundled default. The six system alternatives are `arial`, `helvetica`, `verdana`, `georgia`, `times-new-roman`, and `palatino`; both command help screens list every choice. Body text, headings, captions, and placeholders follow the selection. Code continues to use bundled IBM Plex Mono.
+
+System font faces are loaded by their local full/PostScript names through CSS `@font-face`. No OS font files are downloaded, copied, or added to the package. Required regular, bold/semibold, and italic faces are checked before PDF generation, with explicit errors for unavailable families or styles. Source Sans Pro's original CSS and fallback stack are retained when no alternative is selected.
+
+Verification commands:
+
+```bash
+.venv/bin/python -m pytest tests/test_typography.py tests/test_cli.py tests/test_pdf.py -k 'font or help' -q --tb=short
+.venv/bin/python -m pytest -q --tb=short
+.venv/bin/mdx-printkit file --help
+.venv/bin/mdx-printkit folder --help
+git diff --check
+```
+
+The focused checks passed 19 tests. The full suite passed **93 tests**, with no skips and the same five PyMuPDF/Python 3.14 deprecation warnings. All six system fonts were available on this Mac: generated PDFs use their expected regular, bold, and italic PostScript names with embedded font programs. Semibold headings use each system family's bold face. Code text remains IBM Plex Mono. A simulated unavailable font fails explicitly and leaves an existing PDF unchanged. Folder option propagation, invalid font names, default font embedding, documentation links, and both reference-input checksums were also verified. System-family PDF tests skip only when that family is absent on the test OS.

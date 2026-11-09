@@ -1,6 +1,6 @@
 # MDX PrintKit
 
-Convert local Markdown or MDX files into printable PDFs with embedded images, one file or a folder at a time. Animated GIFs become storyboards of up to four distinct frames. PDFs use bundled Source Sans Pro for text and IBM Plex Mono for code, and can be opened offline.
+Convert local Markdown or MDX files into printable PDFs with embedded images, one file or a folder at a time. Animated GIFs become storyboards of up to four distinct frames. PDFs default to bundled Source Sans Pro for text and IBM Plex Mono for code, and can be opened offline.
 
 ## Install
 
@@ -19,14 +19,14 @@ If `.venv` already exists, skip the first command.
 
 ```bash
 mdx-printkit file "path/to/notes.mdx"
-mdx-printkit file notes.md --output "prints/Notes.pdf" --paper a4
+mdx-printkit file notes.md --output "prints/Notes.pdf" --paper a4 --font georgia
 mdx-printkit folder "path/to/course"
 mdx-printkit folder "path/to/course" --output prints --paper a4 --gif-frames 6 --offline
 ```
 
 PDFs go beside their source files: `course/notes.mdx` becomes `course/notes.pdf`. `file --output` selects a PDF path; `folder --output` selects a directory. Folder conversion processes `.mdx` files directly in that folder, with one PDF per file. Source files stay unchanged.
 
-Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. Run `mdx-printkit file --help` or `mdx-printkit folder --help` for options.
+Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. `--font` selects Source Sans Pro (default) or one of six installed system fonts. Run `mdx-printkit file --help` or `mdx-printkit folder --help` for all choices.
 
 ## What it supports
 

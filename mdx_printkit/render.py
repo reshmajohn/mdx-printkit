@@ -6,12 +6,13 @@ from urllib.parse import unquote, urlsplit
 from playwright.sync_api import Error, sync_playwright
 
 from .errors import PrintKitError
-from .typography import FONT_FACES
+from .typography import DEFAULT_FONT, font_name, required_faces
 
 
-def render_pdf(html_path: Path, output: Path, paper: str = "letter") -> None:
+def render_pdf(html_path: Path, output: Path, paper: str = "letter", font: str = DEFAULT_FONT) -> None:
     if paper not in {"letter", "a4"}:
         raise PrintKitError("paper must be 'letter' or 'a4'")
+    faces = required_faces(font)
     root = html_path.parent.resolve()
 
     def allow_local(route):
@@ -49,8 +50,13 @@ def render_pdf(html_path: Path, output: Path, paper: str = "letter") -> None:
                     }
                     await document.fonts.ready;
                     return missing;
-                }""", [face[:3] for face in FONT_FACES])
+                }""", faces)
                 if missing:
+                    if font != DEFAULT_FONT and any(face.startswith("PrintKit ") for face in missing):
+                        raise PrintKitError(
+                            f"System font {font_name(font)} is unavailable or missing a required style. "
+                            "Choose another --font or use --font source-sans-pro."
+                        )
                     raise PrintKitError(
                         "Bundled fonts failed to load: " + ", ".join(missing) +
                         ". Reinstall mdx-printkit to restore its font files."

@@ -7,6 +7,7 @@ from .assets import AssetResolver
 from .document import build_document
 from .errors import PrintKitError
 from .render import render_pdf
+from .typography import DEFAULT_FONT, font_name
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,8 @@ class ConversionResult:
 
 def convert(source: Path | str, output: Path | str | None = None, *, paper: str = "letter",
             gif_frames: int = 4, offline: bool = False,
-            cache_dir: Path | None = None) -> ConversionResult:
+            cache_dir: Path | None = None, font: str = DEFAULT_FONT) -> ConversionResult:
+    font_name(font)
     source = Path(source).expanduser().resolve()
     if source.suffix.lower() not in {".md", ".mdx"}:
         raise PrintKitError("input must be a local .md or .mdx file")
@@ -38,13 +40,14 @@ def convert(source: Path | str, output: Path | str | None = None, *, paper: str 
         resolver = AssetResolver(source.parent, cache_dir=cache_dir, offline=offline)
         with tempfile.TemporaryDirectory(prefix="mdx-printkit-") as temporary:
             work_dir = Path(temporary)
-            document = build_document(text, resolver, work_dir, gif_frames=gif_frames, title=source.stem)
+            document = build_document(text, resolver, work_dir, gif_frames=gif_frames,
+                                      title=source.stem, font=font)
             html = work_dir / "document.html"
             html.write_text(document.html, encoding="utf-8")
             destination.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(dir=destination.parent, suffix=".pdf", delete=False) as stream:
                 staged = Path(stream.name)
-            render_pdf(html, staged, paper)
+            render_pdf(html, staged, paper, font=font)
             os.replace(staged, destination)
         return ConversionResult(destination, document.images, document.gifs, document.warnings)
     except (OSError, UnicodeError) as exc:
