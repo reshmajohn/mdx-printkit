@@ -90,8 +90,32 @@ def test_missing_browser_action(tmp_path, monkeypatch):
         raise Error("Executable doesn't exist. Please run playwright install")
 
     monkeypatch.setattr("mdx_printkit.render.sync_playwright", fail)
-    with pytest.raises(PrintKitError, match=r"\.venv/bin/python -m playwright install chromium"):
+    with pytest.raises(PrintKitError, match="python -m playwright install chromium"):
         render_pdf(tmp_path / "input.html", tmp_path / "out.pdf")
+
+
+@pytest.mark.parametrize("message", ["Host system is missing dependencies. Run playwright install-deps",
+                                   "error while loading shared libraries: libX11.so"])
+def test_missing_browser_libraries_action(tmp_path, monkeypatch, message):
+    from playwright.sync_api import Error
+    from mdx_printkit.render import render_pdf
+
+    def fail():
+        raise Error(message)
+
+    monkeypatch.setattr("mdx_printkit.render.sync_playwright", fail)
+    with pytest.raises(PrintKitError, match="python -m playwright install --with-deps chromium"):
+        render_pdf(tmp_path / "input.html", tmp_path / "out.pdf")
+
+
+def test_installed_module_help_runs_outside_checkout(tmp_path):
+    import subprocess
+    import sys
+
+    result = subprocess.run([sys.executable, "-m", "mdx_printkit", "file", "--help"],
+                            cwd=tmp_path, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr
+    assert "--font" in result.stdout
 
 
 @pytest.mark.parametrize("case", ["missing", "not-directory", "empty", "output-file"])
@@ -123,7 +147,10 @@ def test_folder_rejects_colliding_destinations_before_writing(tmp_path, capsys):
     shared = tmp_path / "shared.pdf"
     shared.write_bytes(b"previous PDF")
     for stem in ["one", "two"]:
-        (folder / f"{stem}.pdf").symlink_to(shared)
+        try:
+            (folder / f"{stem}.pdf").symlink_to(shared)
+        except (OSError, NotImplementedError):
+            pytest.skip("symlink creation is unavailable without extra OS privileges")
     assert main(["folder", str(folder)]) == 1
     assert "collision" in capsys.readouterr().err
     assert shared.read_bytes() == b"previous PDF"

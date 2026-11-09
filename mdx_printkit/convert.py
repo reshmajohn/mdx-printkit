@@ -47,7 +47,7 @@ def convert(source: Path | str, output: Path | str | None = None, *, paper: str 
             destination.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(dir=destination.parent, suffix=".pdf", delete=False) as stream:
                 staged = Path(stream.name)
-            render_pdf(html, staged, paper, font=font)
+            document.warnings.extend(render_pdf(html, staged, paper, font=font))
             os.replace(staged, destination)
         return ConversionResult(destination, document.images, document.gifs, document.warnings)
     except (OSError, UnicodeError) as exc:

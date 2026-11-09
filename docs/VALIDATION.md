@@ -104,3 +104,28 @@ git diff --check
 ```
 
 The focused checks passed 19 tests. The full suite passed **93 tests**, with no skips and the same five PyMuPDF/Python 3.14 deprecation warnings. All six system fonts were available on this Mac: generated PDFs use their expected regular, bold, and italic PostScript names with embedded font programs. Semibold headings use each system family's bold face. Code text remains IBM Plex Mono. A simulated unavailable font fails explicitly and leaves an existing PDF unchanged. Folder option propagation, invalid font names, default font embedding, documentation links, and both reference-input checksums were also verified. System-family PDF tests skip only when that family is absent on the test OS.
+
+## Windows, Linux, and macOS portability — November 9, 2026
+
+Reviewed every application module, packaging configuration, setup instructions, and synthetic test fixtures for platform assumptions. Changes include:
+
+- Missing system fonts/styles now produce a visible warning and a successful PDF using bundled Source Sans Pro. Both file and folder commands preserve IBM Plex Mono for code. Missing bundled fallback/code fonts remain fatal, preserving an existing destination.
+- Windows drive-letter paths are classified before URL schemes; local backslashes and URL escaping are normalized, and colons are safely escaped through HTML sanitization. Relative references and native absolute paths are exercised on each host OS. UNC/network references remain blocked. Foreign drive paths get an image warning/placeholder rather than pretending they are valid local paths.
+- Renderer file URLs use Python's native `url2pathname` conversion before containment checks. Tests cover Unicode, spaces, percent/hash characters, local authorities, and blocked paths outside the temporary directory.
+- Caches use `platformdirs>=4,<5` native user-cache conventions. Existing entries at `~/.cache/mdx-printkit` remain readable, including offline. Explicit cache overrides remain isolated. No old cached data was moved or deleted.
+- Font fallback avoids rewriting files already open in Chromium, which matters for Windows file sharing. Browser diagnostics distinguish a missing executable from missing Linux libraries and use environment-neutral setup commands.
+- README/usage setup covers Windows PowerShell and macOS/Linux, including direct virtualenv interpreter paths when activation is unavailable. Existing closed-tempfile/atomic-replacement handling is retained. Symlink-only tests skip if the OS denies creating symlinks; unrelated HTTP checks no longer depend on a 50 ms timeout.
+
+Commands run in this macOS checkout:
+
+```bash
+.venv/bin/pip install -e '.[test]'
+.venv/bin/python -m pytest tests/test_pdf.py -k 'unavailable_system_font_warns' -vv -s -o faulthandler_timeout=15 --tb=short
+.venv/bin/python -m pytest -q --tb=short -o faulthandler_timeout=30
+.venv/bin/pip check
+git diff --check
+```
+
+The final full run passed **109 tests**, no skips, in 15.91 seconds, with the same five PyMuPDF/Python 3.14 deprecation warnings. Both fallback PDF checks passed with actual embedded Source Sans Pro and IBM Plex Mono font identities. The dependency check reported no broken requirements; documentation links and whitespace checks passed. The two original reference MDX checksums remain unchanged. No private course conversion or live image download was needed for this update.
+
+`.github/workflows/tests.yml` configures native Ubuntu 24.04, Windows, and macOS jobs for Python 3.11 and 3.14, including Chromium and Linux libraries. Those CI jobs have **not been run from this session**; the completed results above are macOS results plus platform-path unit checks. This is not a claim that Windows/Linux were executed locally. Runtime support follows Playwright's supported desktop OS versions and architectures; Python packages alone do not supply Chromium or required OS libraries.

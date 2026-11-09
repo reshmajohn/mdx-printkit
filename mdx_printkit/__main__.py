@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     options.add_argument("--offline", action="store_true", help="use local images and cached downloads only")
     options.add_argument("--font", choices=FONT_NAMES, default=DEFAULT_FONT,
                          help="body and heading font (default: Source Sans Pro, bundled). "
-                              "The six alternatives use installed system fonts; code stays IBM Plex Mono.")
+                              "Unavailable system fonts warn and use Source Sans Pro; code stays IBM Plex Mono.")
     commands = parser.add_subparsers(dest="command", required=True)
     file_command = commands.add_parser("file", parents=[options], help="convert one .md or .mdx file")
     file_command.add_argument("source", help="local UTF-8 .md or .mdx file")

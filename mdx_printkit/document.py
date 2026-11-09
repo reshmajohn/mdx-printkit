@@ -7,13 +7,13 @@ import html
 from importlib.resources import files
 from pathlib import Path
 import re
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from bs4 import BeautifulSoup
 from markdown_it import MarkdownIt
 import nh3
 
-from .assets import AssetResolver, verify_image
+from .assets import AssetResolver, image_reference_parts, verify_image
 from .errors import AssetError
 from .gif import extract_frames, normalize_image
 from .typography import DEFAULT_FONT, font_css, prepare_fonts
@@ -77,7 +77,7 @@ def _sanitize(markup: str, report: Document) -> BeautifulSoup:
         if tag.name == "img":
             ref = tag.get("src", "")
             try:
-                parts = urlsplit(ref)
+                parts = image_reference_parts(ref)
                 unsafe = parts.scheme.lower() not in {"", "http", "https"} or bool(parts.netloc and not parts.scheme)
             except ValueError:
                 unsafe = True
@@ -88,6 +88,16 @@ def _sanitize(markup: str, report: Document) -> BeautifulSoup:
                 placeholder.string = f"[Image unavailable: {tag.get('alt', '') or ref}]"
                 tag.replace_with(placeholder)
                 continue
+            if not parts.scheme and not parts.netloc:
+                # Escape drive-letter colons before HTML sanitization treats them as a URL scheme.
+                tag["src"] = parts._replace(path=quote(parts.path, safe="/")).geturl()
+        if tag.name == "a" and tag.get("href"):
+            try:
+                parts = image_reference_parts(tag["href"])
+                if not parts.scheme and not parts.netloc and parts.path.lower().endswith(".gif"):
+                    tag["href"] = parts._replace(path=quote(parts.path, safe="/")).geturl()
+            except ValueError:
+                pass
         if tag.name == "div" and "justify-center" in tag.get("class", []):
             tag["class"] = "center"
     safe = nh3.clean(
@@ -117,7 +127,7 @@ def build_document(source: str, resolver: AssetResolver, work_dir: Path,
         ref = tag.get("src" if tag.name == "img" else "href", "")
         if tag.name == "a":
             try:
-                is_gif_link = urlsplit(ref).path.lower().endswith(".gif")
+                is_gif_link = image_reference_parts(ref).path.lower().endswith(".gif")
             except ValueError:
                 is_gif_link = False
             if not is_gif_link or tag.find("img"):

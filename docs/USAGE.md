@@ -2,12 +2,35 @@
 
 For installation and common commands, start with the [README](../README.md).
 
+## Platform setup
+
+Windows, macOS, and Linux use the same CLI and conversion pipeline. Python 3.11+ and the Python packages are required, along with the matching Playwright Chromium browser. Linux may also need OS libraries. See [Playwright's supported operating systems](https://playwright.dev/python/docs/intro#system-requirements); an arbitrary OS with Python alone is not sufficient for browser-based PDF rendering.
+
+After activating your virtual environment, `python -m pip install -e .` and `python -m playwright install chromium` work on all three platforms. On a supported Linux distribution, install missing browser libraries with `python -m playwright install --with-deps chromium` (system package installation may require administrator privileges).
+
+Activation is optional. Use the environment's interpreter directly:
+
+| Platform | Python in this checkout |
+| --- | --- |
+| Windows PowerShell / Command Prompt | `.\.venv\Scripts\python.exe` |
+| macOS / Linux | `.venv/bin/python` |
+
+For example, if PowerShell does not permit the activation script:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\python.exe -m mdx_printkit file "C:\Courses\notes.mdx"
+```
+
+Use the same interpreter for installation, browser setup, and conversion. CI is configured to run native Windows, Ubuntu, and macOS tests on Python 3.11 and 3.14. A local test run verifies only its host OS; see the [validation record](VALIDATION.md) for results actually run.
+
 ## Files and output
 
-Pass a local UTF-8 `.md` or `.mdx` path. Quote paths containing spaces. You can run the tool without activating the environment:
+Pass a local UTF-8 `.md` or `.mdx` path. Quote paths containing spaces. In an activated environment:
 
 ```bash
-.venv/bin/python -m mdx_printkit file "my course/notes.mdx"
+python -m mdx_printkit file "my course/notes.mdx"
 ```
 
 `mdx-printkit file notes.mdx` writes `notes.pdf` beside the source, regardless of your current shell directory. This command accepts `.md` and `.mdx` inputs. `--output` selects a relative or absolute `.pdf` path and creates missing parent directories. The original `mdx-printkit notes.mdx` invocation remains a shorthand for `file`.
@@ -27,7 +50,7 @@ Missing individual images produce placeholders and warnings while conversion con
 
 ## Images and GIFs
 
-Local images resolve relative to the source document, including paths with URL-escaped spaces. Remote HTTP(S) images are downloaded before rendering. PNG, JPEG, WEBP, and GIF contents are verified regardless of filename; ordinary images honor EXIF orientation.
+Local images resolve relative to the source document, including paths with URL-escaped spaces and native Windows separators. Absolute drive-letter image paths are supported on Windows. For portable documents, prefer relative paths with forward slashes; a Windows drive path cannot be resolved on macOS/Linux and receives a warning/placeholder. Remote HTTP(S) images are downloaded before rendering. PNG, JPEG, WEBP, and GIF contents are verified regardless of filename; ordinary images honor EXIF orientation.
 
 Supported forms include:
 
@@ -45,7 +68,15 @@ Animated GIFs become up to four distinct frames in temporal order, normally in a
 
 ## Cache and offline mode
 
-Downloads persist in `~/.cache/mdx-printkit/`, keyed by URL including query parameters. Repeated references share downloaded and rendered assets. Cache entries remain until you remove them; an online run refreshes a corrupt entry.
+Downloads use the OS-specific user cache, selected by [platformdirs](https://platformdirs.readthedocs.io/en/latest/api.html#platformdirs.user_cache_path):
+
+| Platform | Usual cache location |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\mdx-printkit\Cache` |
+| macOS | `~/Library/Caches/mdx-printkit/` |
+| Linux | `$XDG_CACHE_HOME/mdx-printkit/`, or `~/.cache/mdx-printkit/` |
+
+URLs, including query parameters, determine cache keys. Repeated references share downloaded and rendered assets. Cache entries remain until you remove them; an online run refreshes a corrupt entry. The previous `~/.cache/mdx-printkit/` location remains readable when using the default cache, including offline. To force a fresh download of an older entry, remove it from both locations if present. The Python API's explicit `cache_dir` override uses only that directory.
 
 `--offline` makes no HTTP requests. Cached and local images render normally; uncached images receive placeholders. Completed PDFs embed their images and used fonts, so viewing and printing require no network access.
 
@@ -68,9 +99,9 @@ mdx-printkit file notes.mdx --font times-new-roman
 mdx-printkit folder course --font arial --output prints
 ```
 
-System fonts use local CSS `@font-face` sources, with no copying, redistribution, or downloads of OS font files. Availability varies by computer and OS. Regular, bold, and italic styles are required; semibold headings use the system font's bold face. If the chosen family or a required style is unavailable, conversion fails explicitly; choose another option or omit `--font` to use bundled Source Sans Pro.
+System fonts use local CSS `@font-face` sources, with no copying, redistribution, or downloads of OS font files. Availability is checked at runtime, rather than assumed from the OS name. If the chosen family or a required regular/bold/italic style is unavailable, the tool prints a warning and uses bundled Source Sans Pro for the document. Both file and folder conversions continue successfully. Semibold headings use the system font's bold face when that family is available.
 
-The renderer checks the selected text faces and bundled code faces, then waits for font layout before printing. Used fonts are embedded in the PDF. Fonts can change line wrapping and page counts. Glyphs outside a family's coverage may use system fallbacks; the default Source Sans Pro option retains the original Hugging Face fallback stack.
+The renderer checks the selected text faces and bundled code faces, then waits for font layout before printing. Missing/corrupt bundled fonts remain fatal because they are required for dependable output. Used fonts are embedded in the PDF. Fonts can change line wrapping and page counts. Glyphs outside a family's coverage may use system fallbacks; the default Source Sans Pro option retains the original Hugging Face fallback stack.
 
 The bundled Source Sans Pro and IBM Plex Mono fonts retain their SIL Open Font License 1.1 and copyright notices. See [font provenance and licenses](../mdx_printkit/fonts/README.md) for pinned revisions, download URLs, and checksums. Application code has no license pending the owner's choice.
 
@@ -78,7 +109,7 @@ The bundled Source Sans Pro and IBM Plex Mono fonts retain their SIL Open Font L
 
 Markdown headings, paragraphs, lists, blockquotes, tables, strikethrough, links, code, and common HTML are supported. Document HTML is sanitized: scripts, event handlers, arbitrary CSS, and embedded pages are removed. MDX imports, exports, expressions, and custom components are never evaluated; recognizable unsupported syntax gets a warning and readable text or a placeholder.
 
-Remote downloads allow public HTTP(S) destinations only. Private networks, localhost, URL credentials, and schemes such as `file:` or `data:` are blocked. HTTP requests bypass proxy environment variables. Ordinary hyperlinks are not downloaded. Local paths may point outside the source directory but must contain supported raster images. See the [technical design](TECHNICAL_DESIGN.md) for the download and rendering boundaries.
+Remote downloads allow public HTTP(S) destinations only. Private networks, localhost, URL credentials, UNC/network image references, and schemes such as `file:` or `data:` are blocked. HTTP requests bypass proxy environment variables. Ordinary hyperlinks are not downloaded. Local paths may point outside the source directory but must contain supported raster images. See the [technical design](TECHNICAL_DESIGN.md) for the download and rendering boundaries.
 
 | Resource | Limit |
 | --- | --- |
@@ -94,10 +125,12 @@ Oversized or unavailable media receive placeholders. SVG, video, remote webpages
 
 | Problem | Action |
 | --- | --- |
-| Command not found | Activate `.venv`, or use `.venv/bin/python -m mdx_printkit`. |
-| Chromium missing | Run `.venv/bin/python -m playwright install chromium`. On Linux, use `install --with-deps chromium` if system libraries are missing. |
-| Bundled fonts missing or unable to load | Reinstall from a complete checkout with `.venv/bin/pip install -e .`, or reinstall the wheel. Keep the packaged `fonts/` directory intact. |
-| Selected system font unavailable | Choose another installed family or omit `--font` to use Source Sans Pro. The tool does not download system fonts or silently substitute another family. |
+| Command not found | Activate `.venv`, or use its Python interpreter from the platform table with `-m mdx_printkit`. |
+| Chromium missing | Run `python -m playwright install chromium` in the same environment. |
+| Linux browser libraries missing | Run `python -m playwright install --with-deps chromium` on a supported Linux distribution. |
+| Bundled fonts missing or unable to load | Reinstall from a complete checkout with `python -m pip install -e .`, or reinstall the wheel. Keep the packaged `fonts/` directory intact. |
+| Selected system font unavailable | The PDF uses Source Sans Pro with a warning. Choose another installed family or omit `--font` to use the default without a warning. |
+| PDF destination locked or access denied | Close the PDF in its viewer, particularly on Windows, and check that the destination directory is writable. |
 | Image unavailable | Read the warning for its path, HTTP status, timeout, format, size limit, or blocked address. Use a local raster copy for authenticated or private-network images. |
 | Stale remote image | Remove its cache entry, or clear the tool's cache, and rerun online. |
 | Unexpected MDX output | Replace custom components with ordinary Markdown/HTML. Fenced code examples remain literal. |

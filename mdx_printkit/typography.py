@@ -70,7 +70,7 @@ def font_css(font: str = DEFAULT_FONT) -> str:
         rules.append(f'@font-face {{ font-family: "PrintKit {family}"; src: {sources}; '
                      f'font-weight: {weight}; font-style: {style}; }}')
     fallback = "serif" if font in {"georgia", "times-new-roman", "palatino"} else "sans-serif"
-    rules.append(f'html {{ font-family: "PrintKit {family}", {fallback}, "Apple Color Emoji", '
+    rules.append(f'html {{ --printkit-body-font: "PrintKit {family}", {fallback}, "Apple Color Emoji", '
                  '"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }')
     return "\n" + "\n".join(rules)
 
@@ -83,6 +83,9 @@ def prepare_fonts(work_dir: Path, font: str = DEFAULT_FONT) -> None:
             continue
         target = work_dir / "fonts" / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)
+        # Chromium can hold font files open on Windows during fallback preparation.
+        if target.is_file():
+            continue
         try:
             target.write_bytes(resources.joinpath(relative_path).read_bytes())
         except FileNotFoundError as exc:

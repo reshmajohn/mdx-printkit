@@ -4,16 +4,30 @@ Convert local Markdown or MDX files into printable PDFs with embedded images, on
 
 ## Install
 
-Requires Python 3.11 or newer. From the repository:
+Requires Python 3.11 or newer and Playwright Chromium on Windows, macOS, or a supported Linux distribution. From the repository, create and activate an environment:
+
+**macOS / Linux**
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e .
-.venv/bin/python -m playwright install chromium
 source .venv/bin/activate
 ```
 
-If `.venv` already exists, skip the first command.
+**Windows PowerShell**
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Then, on any platform:
+
+```bash
+python -m pip install -e .
+python -m playwright install chromium
+```
+
+Reuse an existing `.venv` if available. See [platform setup](docs/USAGE.md#platform-setup) for Linux libraries and running without activation.
 
 ## Use
 
@@ -26,7 +40,7 @@ mdx-printkit folder "path/to/course" --output prints --paper a4 --gif-frames 6 -
 
 PDFs go beside their source files: `course/notes.mdx` becomes `course/notes.pdf`. `file --output` selects a PDF path; `folder --output` selects a directory. Folder conversion processes `.mdx` files directly in that folder, with one PDF per file. Source files stay unchanged.
 
-Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. `--font` selects Source Sans Pro (default) or one of six installed system fonts. Run `mdx-printkit file --help` or `mdx-printkit folder --help` for all choices.
+Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1–12; `--offline` uses local images and cached downloads only. `--font` selects Source Sans Pro (default) or one of six system fonts; unavailable choices warn and fall back to Source Sans Pro. Run `mdx-printkit file --help` or `mdx-printkit folder --help` for all choices.
 
 ## What it supports
 
@@ -37,10 +51,10 @@ React components and MDX JavaScript are not executed. SVG, video, and authentica
 ## Development
 
 ```bash
-.venv/bin/pip install -e '.[test]'
-.venv/bin/python -m pytest
+python -m pip install -e '.[test]'
+python -m pytest
 ```
 
-Tests use synthetic local fixtures; PDF tests require Playwright Chromium. Application code lives in `mdx_printkit/`, with CLI startup in `__main__.py`.
+Run these in the activated environment. Tests use synthetic local fixtures; PDF tests require Chromium. CI is configured for Windows, Linux, and macOS on Python 3.11 and 3.14. Application code lives in `mdx_printkit/`, with CLI startup in `__main__.py`.
 
-See the [technical design](docs/TECHNICAL_DESIGN.md), [validation record](docs/VALIDATION.md), and [font sources and licenses](mdx_printkit/fonts/README.md). Keep reference inputs, downloaded course assets, and generated PDFs out of Git.
+See the [technical design](docs/TECHNICAL_DESIGN.md), [validation record](docs/VALIDATION.md), and [font sources and licenses](mdx_printkit/fonts/README.md).

@@ -28,7 +28,12 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 | Typography | Missing or corrupt bundled font | Rendering fails explicitly instead of silently using a fallback |
 | Font CLI | `file --help`, `folder --help`, valid/invalid `--font` | Both list all seven options and default Source Sans Pro; unknown options fail helpfully; folder selection reaches every input |
 | System typography | Offline PDF with each installed alternative | Actual regular, bold/semibold, and italic PDF spans use the chosen family and fonts are embedded; code remains IBM Plex Mono. Skip a family-specific test only if that font is absent on the test OS |
-| System typography | Selected family or style unavailable | Explicit error without substitution; existing destination PDF remains intact |
+| System typography | Selected family or style unavailable | Visible warning and successful PDF using embedded Source Sans Pro; code remains IBM Plex Mono; verify both file and folder commands |
+| System typography | Bundled fallback unavailable | Fatal actionable error and existing destination PDF preserved |
+| Platforms | Native absolute image paths, relative backslashes, escaped drive colons | Correct image resolution on the host OS without treating a drive letter as a URL scheme; Windows syntax survives sanitization |
+| Platforms | Local renderer URI with Unicode/spaces/percent/hash | Native path conversion succeeds and only files inside the temporary render directory are allowed |
+| Platforms | Default native cache with an earlier cached image | Offline conversion can reuse the legacy cache; explicit cache overrides remain isolated |
+| Platforms | Browser or Linux libraries missing | Distinct actionable setup commands without hardcoded `.venv/bin` assumptions |
 | Packaging | Built wheel and isolated installation | CSS, seven font files, both original font licenses, and provenance are present; conversion works outside the source checkout |
 | Print | Long title, tall/wide image, long code line | No obvious clipping or severe layout corruption |
 | Safety | `<script>`, `onerror`, `javascript:` URL, unsupported custom JSX | No execution; warnings/placeholder as applicable; no external renderer fetch |
@@ -70,3 +75,4 @@ When the private `reference-input/extension-image.mdx` is present, convert it on
 - Check a cached/offline regeneration when feasible.
 - Execute `pytest` and report passing/failing counts; run `mdx-printkit --help`.
 - In final Codex handoff report: actual installation/run commands, output file paths, tests run, unresolved issues, and any intentionally unsupported MDX constructs.
+- Native Windows, Linux, and macOS CI is configured for Python 3.11 and 3.14. Record which environments actually ran; a macOS run alone is not proof of Windows/Linux execution. Skip symlink-only checks when the OS denies symlink creation, and installed-family PDF checks only when that family is absent.

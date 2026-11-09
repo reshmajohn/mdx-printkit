@@ -255,16 +255,59 @@ def test_system_font_pdf_uses_selected_family_and_embeds_it(tmp_path, chromium, 
                        for key in ["/FontFile", "/FontFile2", "/FontFile3"])
 
 
-def test_unavailable_system_font_fails_without_substitution(tmp_path, monkeypatch, chromium):
-    from mdx_printkit.errors import PrintKitError
+@pytest.mark.parametrize("command", ["file", "folder"])
+def test_unavailable_system_font_warns_and_falls_back(tmp_path, monkeypatch, chromium, capsys, command):
+    import pymupdf
     from mdx_printkit.typography import SYSTEM_FACES
 
     missing = ("PrintKitNonexistentFont019abcdef",)
     monkeypatch.setitem(SYSTEM_FACES, "arial", (missing, missing, missing))
     source = tmp_path / "notes.mdx"
-    source.write_text("# Heading\n\nBody", encoding="utf-8")
+    original = "# Heading\n\nBody\n\n*Italic*\n\n### Semibold\n\n`code`"
+    source.write_text(original, encoding="utf-8")
     output = source.with_suffix(".pdf")
     output.write_bytes(b"previous PDF")
-    with pytest.raises(PrintKitError, match="System font Arial is unavailable"):
+    assert main([command, str(source if command == "file" else tmp_path), "--font", "arial", "--offline"]) == 0
+    captured = capsys.readouterr()
+    assert "Warning: System font Arial is unavailable" in captured.err
+    assert "using bundled Source Sans Pro" in captured.err
+    assert "1 warning(s)" in captured.out
+    with pymupdf.open(output) as pdf:
+        names = {span["font"] for page in pdf for block in page.get_text("dict")["blocks"]
+                 if "lines" in block for line in block["lines"] for span in line["spans"]}
+    assert names == {"SourceSansPro-Regular", "SourceSansPro-Bold", "SourceSansPro-It",
+                     "SourceSansPro-Semibold", "IBMPlexMono-Regular"}
+    assert source.read_text(encoding="utf-8") == original
+
+
+def test_missing_bundled_fallback_preserves_previous_pdf(tmp_path, monkeypatch, chromium):
+    from mdx_printkit.errors import PrintKitError
+    from mdx_printkit.typography import SYSTEM_FACES
+
+    missing = ("PrintKitNonexistentFont019abcdef",)
+    monkeypatch.setitem(SYSTEM_FACES, "arial", (missing, missing, missing))
+
+    def fail(*args):
+        raise PrintKitError("Bundled font is missing; reinstall mdx-printkit")
+
+    monkeypatch.setattr("mdx_printkit.render.prepare_fonts", fail)
+    source = tmp_path / "notes.mdx"
+    source.write_text("# Heading", encoding="utf-8")
+    output = source.with_suffix(".pdf")
+    output.write_bytes(b"previous PDF")
+    with pytest.raises(PrintKitError, match="Bundled font is missing"):
         convert(source, font="arial", offline=True)
     assert output.read_bytes() == b"previous PDF"
+
+
+def test_local_resource_file_uri_is_native_and_confined(tmp_path):
+    from mdx_printkit.render import _local_resource
+
+    root = tmp_path / "café notes #50%"
+    root.mkdir()
+    asset = root / "image 100%.png"
+    assert _local_resource(asset.as_uri(), root)
+    assert _local_resource(asset.as_uri().replace("file:///", "file://localhost/"), root)
+    assert not _local_resource((tmp_path / "outside.png").as_uri(), root)
+    assert not _local_resource("file://server/share/image.png", root)
+    assert not _local_resource("https://example.com/image.png", root)

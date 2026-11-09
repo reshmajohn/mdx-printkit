@@ -7,19 +7,39 @@ import http.client
 import ipaddress
 import os
 from pathlib import Path
+import re
 import socket
 import ssl
 import tempfile
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import SplitResult, unquote, urljoin, urlsplit
 import warnings
 
 from PIL import Image
+from platformdirs import user_cache_path
 
 from .errors import AssetError
 
 MAX_BYTES = 25 * 1024 * 1024
 MAX_PIXELS = 40_000_000
 SUPPORTED_FORMATS = {"PNG", "JPEG", "WEBP", "GIF"}
+
+
+def image_reference_parts(reference: str) -> SplitResult:
+    """Parse asset URLs while preserving drive letters and native path separators."""
+    if re.match(r"^[A-Za-z]:[/\\]", reference):
+        parts = urlsplit("/" + reference.replace("\\", "/"))
+        parts = parts._replace(path=parts.path[1:])
+    elif reference.startswith("\\\\"):
+        # UNC references are network resources, not unrestricted local images.
+        return urlsplit(reference.replace("\\", "/"))
+    else:
+        parts = urlsplit(reference)
+    if parts.scheme or parts.netloc:
+        return parts
+    path = unquote(parts.path).replace("\\", "/")
+    if path.startswith("//"):
+        return urlsplit(path)._replace(query=parts.query, fragment=parts.fragment)
+    return parts._replace(path=path)
 
 
 def verify_image(path: Path) -> str:
@@ -57,7 +77,8 @@ class AssetResolver:
     def __init__(self, source_dir: Path, *, cache_dir: Path | None = None,
                  offline: bool = False, timeout: float = 15, max_requests: int = 100):
         self.source_dir = source_dir
-        self.cache_dir = cache_dir if cache_dir is not None else Path.home() / ".cache" / "mdx-printkit"
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else user_cache_path("mdx-printkit", appauthor=False)
+        self.legacy_cache_dir = Path.home() / ".cache" / "mdx-printkit" if cache_dir is None else None
         self.offline = offline
         self.timeout = timeout
         self.max_requests = max_requests
@@ -71,7 +92,7 @@ class AssetResolver:
         if reference in self._failures:
             raise AssetError(self._failures[reference])
         try:
-            parts = urlsplit(reference)
+            parts = image_reference_parts(reference)
             if parts.scheme.lower() in {"http", "https"}:
                 path = self._remote(reference)
             elif parts.scheme or parts.netloc:
@@ -79,7 +100,9 @@ class AssetResolver:
             else:
                 if not parts.path:
                     raise AssetError("missing image path")
-                path = (self.source_dir / unquote(parts.path)).resolve()
+                if os.name != "nt" and re.match(r"^[A-Za-z]:/", parts.path):
+                    raise AssetError("Windows drive paths require Windows; use a relative image path for portable documents")
+                path = (self.source_dir / parts.path).resolve()
                 verify_image(path)
             self._resolved[reference] = path
             return path
@@ -91,15 +114,23 @@ class AssetResolver:
     def _remote(self, url: str) -> Path:
         # Fragments are client-side; query strings remain part of the cache identity.
         url = urlsplit(url)._replace(fragment="").geturl()
-        cache = self.cache_dir / (hashlib.sha256(url.encode()).hexdigest() + ".image")
-        if cache.is_file():
+        filename = hashlib.sha256(url.encode()).hexdigest() + ".image"
+        cache = self.cache_dir / filename
+        candidates = [cache]
+        if self.legacy_cache_dir is not None and self.legacy_cache_dir != self.cache_dir:
+            candidates.append(self.legacy_cache_dir / filename)
+        corrupt = False
+        for candidate in candidates:
+            if not candidate.is_file():
+                continue
             try:
-                verify_image(cache)
-                return cache
+                verify_image(candidate)
+                return candidate
             except AssetError:
-                if self.offline:
-                    raise AssetError("cached image is corrupt; rerun without --offline to refresh")
+                corrupt = True
         if self.offline:
+            if corrupt:
+                raise AssetError("cached image is corrupt; rerun without --offline to refresh")
             raise AssetError("image is not cached and --offline prevents downloading")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         temporary: Path | None = None

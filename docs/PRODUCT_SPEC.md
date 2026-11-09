@@ -19,7 +19,7 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 - Default page size: US Letter; switchable to A4 with `--paper a4`.
 - Clean, white, legible layout with heading hierarchy, modest margins, clickable hyperlinks, readable monospace/code blocks, centered images where appropriate, and image aspect ratios preserved.
 - Bundle Source Sans Pro Regular 400, SemiBold 600, Bold 700, and Italic 400 for body text and headings. Use 11pt body text with 1.5 line spacing and the original Hugging Face fallback stack. Use IBM Plex Mono only for code blocks and inline code. Load local font files through `@font-face`, preserve their licenses, embed used fonts in PDFs, and verify the actual PDF font identities. Conversion must not need a font download or system font installation.
-- Both commands accept `--font {source-sans-pro,arial,helvetica,verdana,georgia,times-new-roman,palatino}`, with Source Sans Pro as the default. The six alternatives use installed system fonts without downloading or bundling them. Apply the selection to body text and headings; code keeps IBM Plex Mono. Validate required styles before printing and fail explicitly if a selected family/style is unavailable. List all choices and the default in command help.
+- Both commands accept `--font {source-sans-pro,arial,helvetica,verdana,georgia,times-new-roman,palatino}`, with Source Sans Pro as the default. The six alternatives use installed system fonts without downloading or bundling them. Apply the selection to body text and headings; code keeps IBM Plex Mono. If a selected system family/style is unavailable, warn and use bundled Source Sans Pro while completing conversion. Missing bundled fonts remain fatal. List all choices, the default, and fallback behavior in command help.
 - Avoid cut-off text and images, stranded headings, splitting a figure/storyboard across pages when feasible, and an excessive number of nearly empty pages.
 - Preserve paragraphs' original order and the document's title/content; no cover page, table of contents, or decorative branding required.
 
@@ -57,3 +57,7 @@ No GUI, no drag-and-drop, no recursive folder scanning, no URL-to-MDX fetch, no 
 
 ## Acceptance summary
 `motivation.mdx` yields legible, correct-order text plus its three PNG images. A test MDX with a remote or local GIF yields up to four correctly ordered representative frames. Broken remote images show a diagnostic placeholder, not a blank hole. The PDF opens without network access.
+
+## Platforms
+
+Support Windows, macOS, and Playwright-supported Linux distributions with Python 3.11+, installed dependencies, Chromium, and any required OS browser libraries. Handle native filesystem paths and file URLs correctly, including Windows drive letters and spaces. Use platform-native user cache locations while retaining read access to the earlier cache for offline compatibility. Setup and diagnostics must work without assuming Unix virtualenv paths. CI must exercise native Windows, Linux, and macOS environments; distinguish configured checks from actual completed runs.
