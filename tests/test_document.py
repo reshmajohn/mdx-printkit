@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import pytest
 
-from mdx_printkit.assets import AssetResolver
+from mdx_printkit.assets import AssetResolver, image_reference_parts
 from mdx_printkit.document import build_document
 
 
@@ -106,3 +106,24 @@ def test_remote_gif_source_caption(tmp_path, animated_gif, monkeypatch):
     document = build_document("[Demo](https://example.com/demo.gif?raw=1)", resolver, tmp_path / "work")
     soup = BeautifulSoup(document.html, "html.parser")
     assert soup.select_one("figcaption a")["href"] == "https://example.com/demo.gif?raw=1"
+
+
+def test_native_absolute_image_path_survives_sanitization(tmp_path, png):
+    document = build(f'<img src="{png.as_posix()}" alt="Absolute">', tmp_path)
+    assert document.images == 1 and not document.warnings
+    assert 'alt="Absolute"' in document.html
+
+
+def test_windows_image_and_gif_paths_reach_asset_resolution(tmp_path, png, animated_gif, monkeypatch):
+    resolver = AssetResolver(tmp_path, offline=True)
+    references = []
+
+    def resolve(reference):
+        references.append(image_reference_parts(reference).path)
+        return animated_gif if reference.endswith(".gif") else png
+
+    monkeypatch.setattr(resolver, "resolve", resolve)
+    document = build_document('<img src="C:\\course\\diagram.png" alt="Diagram">\n\n'
+                              '[Animation](C:/course/moving.gif)', resolver, tmp_path / "work")
+    assert references == ["C:/course/diagram.png", "C:/course/moving.gif"]
+    assert document.images == 2 and document.gifs == 1 and not document.warnings
