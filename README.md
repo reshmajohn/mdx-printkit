@@ -44,7 +44,7 @@ Both commands default to US Letter and four GIF frames. `--gif-frames` accepts 1
 
 ## What it supports
 
-Ordinary Markdown, tables, code, common HTML, and PNG/JPEG/WEBP/GIF images. Local image paths resolve relative to the source document. GIF images and direct Markdown links to `.gif` files both become storyboards. Missing images receive visible placeholders and warnings.
+Ordinary Markdown, tables, code, common HTML, LaTeX equations (`$...$` and `$$...$$`), and PNG/JPEG/WEBP/GIF images. Equations use a bundled math font and render offline. Local image paths resolve relative to the source document. GIF images and direct Markdown links to `.gif` files both become storyboards. Missing images receive visible placeholders and warnings.
 
 React components and MDX JavaScript are not executed. SVG, video, and authenticated image downloads are unsupported. See the [usage guide](docs/USAGE.md) for image examples, caching, limits, and troubleshooting.
 

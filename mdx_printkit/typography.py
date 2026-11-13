@@ -40,6 +40,7 @@ FONT_FACES = (
     ("IBM Plex Mono", 700, "normal", "ibm-plex-mono/IBMPlexMono-Bold.ttf"),
     ("IBM Plex Mono", 400, "italic", "ibm-plex-mono/IBMPlexMono-Italic.ttf"),
 )
+MATH_FONT_FACE = ("STIX Two Math", 400, "normal", "stix-two-math/STIXTwoMath-Regular.ttf")
 
 
 def font_name(font: str) -> str:
@@ -48,14 +49,14 @@ def font_name(font: str) -> str:
     return FONT_NAMES[font]
 
 
-def required_faces(font: str = DEFAULT_FONT) -> list[tuple[str, int, str]]:
+def required_faces(font: str = DEFAULT_FONT, *, include_math: bool = False) -> list[tuple[str, int, str]]:
     family = font_name(font)
     if font == DEFAULT_FONT:
-        return [face[:3] for face in FONT_FACES]
+        return [face[:3] for face in FONT_FACES] + ([MATH_FONT_FACE[:3]] if include_math else [])
     return [(f"PrintKit {family}", weight, style) for weight, style in
             [(400, "normal"), (600, "normal"), (700, "normal"), (400, "italic")]] + [
         face[:3] for face in FONT_FACES if face[0] == "IBM Plex Mono"
-    ]
+    ] + ([MATH_FONT_FACE[:3]] if include_math else [])
 
 
 def font_css(font: str = DEFAULT_FONT) -> str:
@@ -75,11 +76,11 @@ def font_css(font: str = DEFAULT_FONT) -> str:
     return "\n" + "\n".join(rules)
 
 
-def prepare_fonts(work_dir: Path, font: str = DEFAULT_FONT) -> None:
+def prepare_fonts(work_dir: Path, font: str = DEFAULT_FONT, *, include_math: bool = False) -> None:
     font_name(font)
     resources = files("mdx_printkit").joinpath("fonts")
-    for family, _, _, relative_path in FONT_FACES:
-        if font != DEFAULT_FONT and family != "IBM Plex Mono":
+    for family, _, _, relative_path in FONT_FACES + ((MATH_FONT_FACE,) if include_math else ()):
+        if font != DEFAULT_FONT and family == "Source Sans Pro":
             continue
         target = work_dir / "fonts" / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -4,6 +4,7 @@
 Use Python 3.11+ and an installable `pyproject.toml` with a console-script entry point `mdx-printkit = mdx_printkit.__main__:main`. Keep dependencies light and maintained:
 
 - `markdown-it-py` for Markdown parsing/rendering with HTML enabled for the supported HTML subset; optionally enable table/strikethrough features if necessary.
+- `mdit-py-plugins` dollar-math tokens preserve TeX before Markdown emphasis/escape parsing. `latex2mathml` converts these tokens to native MathML without executing TeX or document JavaScript. `equations.py` bounds formula length/nesting, validates a strict MathML vocabulary and required arguments, and preserves invalid/unsupported formulas as escaped code with warnings. A second HTML sanitization pass strips unsafe content. Legacy numeric math variants are translated to actual Unicode math digits; CSS maps column alignment for Chromium. Bundled STIX Two Math is copied and checked only for documents containing MathML; its used TrueType subset is embedded in the PDF.
 - `beautifulsoup4` for DOM-level asset transformations and tolerant handling of real-world HTML such as non-self-closing `<img>` tags.
 - `nh3` or equivalent maintained sanitizer for untrusted HTML: allow only print-relevant tags/attributes, remove unsafe tags/events/CSS/JS while retaining text.
 - `httpx` or `requests` for remote downloads with timeouts, redirects and explicit error handling.

@@ -40,6 +40,12 @@
   font-weight: 400;
   font-style: italic;
 }
+@font-face {
+  font-family: "STIX Two Math";
+  src: url("fonts/stix-two-math/STIXTwoMath-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
 @page { margin: 0.65in; }
 * { box-sizing: border-box; }
 html {
@@ -84,3 +90,11 @@ th { background: #f1f1f1; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 hr { border: 0; border-top: 0.5pt solid #aaa; margin: 15pt 0; }
+math { font-family: "STIX Two Math", math; font-weight: 400; font-style: normal; }
+/* Chromium uses CSS alignment rather than MathML's legacy columnalign attribute. */
+mtd[columnalign="left"] { text-align: left; }
+mtd[columnalign="right"] { text-align: right; }
+mtd[columnalign="center"] { text-align: center; }
+.math-inline { white-space: nowrap; }
+.math-display { display: block; margin: 1em 0; text-align: center; break-inside: avoid; }
+.math-error { white-space: pre-wrap; overflow-wrap: anywhere; }

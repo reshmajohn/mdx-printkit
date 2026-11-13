@@ -32,6 +32,11 @@ A small local command-line utility to print educational Markdown/MDX reading mat
 - `<div class="flex justify-center">` should be treated as a centered image block even if the source document's original CSS framework is unavailable.
 - Preserve `alt` text as an accessibility/placeholder description; ordinary images need not have visible captions unless the document provides one.
 
+### Equation behavior
+- Typeset dollar-delimited inline and display TeX math, including fractions, roots, scripts, sums, aligned equations, and cases. Code examples remain literal.
+- Bundle a licensed math font and render equations offline through native Chromium MathML. Body/code typography, image handling, and CLI options remain unchanged.
+- Do not execute TeX, scripts, macros, or file inclusion. Safely unsupported/invalid formulas retain visible TeX with a warning. Preserve the original input, including source mistakes.
+
 ### GIF behavior (important)
 - Default option B: convert an animated GIF to a print-friendly **storyboard of up to 4 distinct frames**, in temporal order, labeled `1/4`, `2/4`, etc. Prefer a compact 2x2 grid at four frames; arrange two/three frames neatly.
 - Sample frames across *elapsed animation time* including beginning and near end, not simply the first four adjacent frames; respect frame durations, transparency, disposal and compositing. Deduplicate frames when the animation is static/repetitive.

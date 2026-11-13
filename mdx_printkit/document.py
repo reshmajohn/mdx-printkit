@@ -15,6 +15,7 @@ import nh3
 
 from .assets import AssetResolver, image_reference_parts, verify_image
 from .errors import AssetError
+from .equations import MATH_ATTRIBUTES, MATH_TAGS, enable_equations
 from .gif import extract_frames, normalize_image
 from .typography import DEFAULT_FONT, font_css, prepare_fonts
 
@@ -37,6 +38,7 @@ class Document:
 
 def _markdown(source: str, report: Document) -> str:
     parser = MarkdownIt("commonmark", {"html": True}).enable(["table", "strikethrough"])
+    enable_equations(parser, report.warn)
     tokens = parser.parse(source)
 
     def inspect(token):
@@ -101,12 +103,14 @@ def _sanitize(markup: str, report: Document) -> BeautifulSoup:
         if tag.name == "div" and "justify-center" in tag.get("class", []):
             tag["class"] = "center"
     safe = nh3.clean(
-        str(soup), tags=TAGS,
+        str(soup), tags=TAGS | MATH_TAGS,
         clean_content_tags={"script", "style", "iframe", "object", "embed", "template"},
-        attributes={"img": {"src", "alt", "title"},
+        attributes={**MATH_ATTRIBUTES, "img": {"src", "alt", "title"},
                     "a": {"href", "title"}, "ol": {"start"},
                     "th": {"colspan", "rowspan"}, "td": {"colspan", "rowspan"}},
-        allowed_classes={"div": {"center"}, "span": {"missing-image"}},
+        allowed_classes={"div": {"center", "math-display"},
+                         "span": {"missing-image", "math-inline", "math-display"},
+                         "code": {"math-error"}},
         url_schemes={"http", "https", "mailto"},
     )
     return BeautifulSoup(safe, "html.parser")
@@ -206,7 +210,7 @@ def build_document(source: str, resolver: AssetResolver, work_dir: Path,
 
     heading = soup.find("h1")
     title = heading.get_text(" ", strip=True) if heading else title
-    prepare_fonts(work_dir, font)
+    prepare_fonts(work_dir, font, include_math=soup.find("math") is not None)
     css = files("mdx_printkit").joinpath("styles.css").read_text(encoding="utf-8") + selected_css
     report.html = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'

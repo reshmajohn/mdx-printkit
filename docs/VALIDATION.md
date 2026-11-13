@@ -129,3 +129,32 @@ git diff --check
 The final full run passed **109 tests**, no skips, in 15.91 seconds, with the same five PyMuPDF/Python 3.14 deprecation warnings. Both fallback PDF checks passed with actual embedded Source Sans Pro and IBM Plex Mono font identities. The dependency check reported no broken requirements; documentation links and whitespace checks passed. The two original reference MDX checksums remain unchanged. No private course conversion or live image download was needed for this update.
 
 `.github/workflows/tests.yml` configures native Ubuntu 24.04, Windows, and macOS jobs for Python 3.11 and 3.14, including Chromium and Linux libraries. Those CI jobs have **not been run from this session**; the completed results above are macOS results plus platform-path unit checks. This is not a claim that Windows/Linux were executed locally. Runtime support follows Playwright's supported desktop OS versions and architectures; Python packages alone do not supply Chromium or required OS libraries.
+
+## Printable equations — November 9, 2026
+
+The original YOLO PDF printed literal TeX delimiters/commands and allowed Markdown to damage equation syntax. Added dollar-math token parsing with `mdit-py-plugins` and safe TeX-to-MathML conversion with `latex2mathml`. Chromium now prints native math using bundled STIX Two Math, with its unmodified SIL license. Explicit CSS cell alignment fixes Chromium's handling of legacy MathML alignment attributes. Numeric variants use actual Unicode mathematical digits, including double-struck indicator 𝟙. Body/code font choices, images, GIF extraction, and ordinary layout rules are unchanged.
+
+Commands run in this macOS/Python 3.14 checkout:
+
+```bash
+.venv/bin/pip install -e '.[test]'
+.venv/bin/python -m pytest tests/test_equations.py -q --tb=short
+.venv/bin/python -m pytest -q --tb=short -o faulthandler_timeout=30
+.venv/bin/python -m mdx_printkit file reference-input/yolo.mdx --output output/yolo-math.pdf --offline
+.venv/bin/pip wheel . --no-deps --wheel-dir output/math-review/dist
+.venv/bin/pip check
+git diff --check
+```
+
+The final full suite passed **127 tests**, no skips, in 17.44 seconds. The five existing PyMuPDF/Python deprecation warnings remain. Eighteen equation checks cover inline/display syntax, paragraph displays, fractions/roots/scripts/sums, alignment/cases, actual PDF equals-sign positions, mathematical digits, code/currency/escaped dollars, invalid TeX and markup/inclusion attempts, size/nesting limits, offline Letter/A4 output, math font embedding/failure, and unavailable system body-font fallback. Dependencies and whitespace checks passed.
+
+The revised private sample is `output/yolo-math.pdf`: **12 pages, 45 typeset formulas, six image references including one four-frame GIF storyboard, zero conversion warnings**. All assets came from the existing cache; no course download was needed. PDF inspection found embedded `STIXTwoMath-Regular` alongside Source Sans Pro, no raw dollar delimiters, and ten double-struck indicator digits. All page text bounds fit within the printable area. Rasterized all pages, reviewed their contact sheet, and inspected the equation-heavy pages at readable scale, including the aligned derivation, piecewise activation, sums, roots, and loss functions. Also reviewed the first page and GIF storyboard. The original reference MDX and PDF were not modified; SHA-256 checks remained:
+
+```text
+yolo.mdx  d1ba3fbc703fb80ab4f4b365ceee9b3008b7ad313b982625b31cc5dd192ed0df
+yolo.pdf  24b1d7608a2f9185f646c996f5f569487906357be89d0a61e924bd2144cb8c07
+```
+
+The built wheel contains eight font files, all three font licenses, the equation module, CSS, and provenance; new font/module resources match the source bytes. An offline conversion imported directly from that wheel outside the checkout also succeeded with an embedded STIX math font and no warnings. A first build attempt without build isolation lacked local setuptools; the standard isolated build succeeded. These checks ran on macOS only; Windows/Linux CI was not executed in this session.
+
+Math support is a TeX subset rather than a full LaTeX engine. Unsupported or malformed recognized formulas warn and retain escaped TeX. Unpaired dollar delimiters remain ordinary text. Custom macros/packages are unsupported, and very long expressions should use explicit aligned line breaks. Source mathematical mistakes are preserved.

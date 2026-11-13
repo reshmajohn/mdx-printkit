@@ -21,7 +21,7 @@ def _local_resource(url: str, root: Path) -> bool:
         return False
 
 
-def _missing_fonts(page, font: str) -> list[str]:
+def _missing_fonts(page, font: str, include_math: bool = False) -> list[str]:
     return page.evaluate("""async faces => {
         const missing = [];
         for (const [family, weight, style] of faces) {
@@ -37,7 +37,7 @@ def _missing_fonts(page, font: str) -> list[str]:
         }
         await document.fonts.ready;
         return missing;
-    }""", required_faces(font))
+    }""", required_faces(font, include_math=include_math))
 
 
 def render_pdf(html_path: Path, output: Path, paper: str = "letter", font: str = DEFAULT_FONT) -> list[str]:
@@ -65,7 +65,8 @@ def render_pdf(html_path: Path, output: Path, paper: str = "letter", font: str =
                 page.goto(html_path.resolve().as_uri(), wait_until="load")
                 # Only this application-owned expression runs; document scripting stays disabled.
                 page.evaluate("() => Promise.all(Array.from(document.images, img => img.decode()))")
-                missing = _missing_fonts(page, font)
+                include_math = page.locator("math").count() > 0
+                missing = _missing_fonts(page, font, include_math)
                 if font != DEFAULT_FONT and missing and all(face.startswith("PrintKit ") for face in missing):
                     prepare_fonts(root)
                     page.evaluate("() => document.documentElement.style.setProperty('--printkit-body-font', 'initial')")
@@ -73,7 +74,7 @@ def render_pdf(html_path: Path, output: Path, paper: str = "letter", font: str =
                         f"System font {font_name(font)} is unavailable or missing a required style "
                         "on this system; using bundled Source Sans Pro."
                     )
-                    missing = _missing_fonts(page, DEFAULT_FONT)
+                    missing = _missing_fonts(page, DEFAULT_FONT, include_math)
                 if missing:
                     raise PrintKitError(
                         "Bundled fonts failed to load: " + ", ".join(missing) +

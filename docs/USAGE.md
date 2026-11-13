@@ -66,6 +66,29 @@ Supported forms include:
 
 Animated GIFs become up to four distinct frames in temporal order, normally in a 2x2 grid. Sampling uses elapsed animation time and respects transparency and disposal. Repeated visual states are deduplicated. `--gif-frames N` accepts 1–12; with one frame, the animation's midpoint is used. Single-frame GIFs display as ordinary images. Remote storyboards retain a clickable source link. Animated WEBP uses its first frame.
 
+## Equations
+
+Use `$...$` for inline math and `$$...$$` for centered display equations. For example:
+
+```latex
+An inline equation: $S \times S$.
+
+$$\frac{x^2}{\sqrt{y}}$$
+
+$$
+\begin{align*}
+L_{\text{coord}} &= \sum_{b=0}^{B} x_b^2 \\
+L_{\text{class}} &= y^2
+\end{align*}
+$$
+```
+
+Fractions, roots, subscripts/superscripts, sums, accents, common symbols, `align`/`align*`, and `cases` are supported. Double-dollar equations also work within a paragraph. Escape literal dollars as `\$`; fenced and inline code stay literal. Avoid spaces immediately inside single-dollar delimiters.
+
+The Python parser converts TeX notation to MathML, which Chromium typesets using bundled STIX Two Math. Equations and their font work offline for both commands, independently of `--font`. No TeX installation, Node.js, document JavaScript, or external math service is needed. The font is checked before printing and embedded in the PDF.
+
+This supports the converter's TeX math subset, not a complete LaTeX document engine. Custom macros, packages, file inclusion, and TeX hyperlinks are unsupported. Recognized formulas that cannot be converted safely produce a warning and retain their TeX source visibly. Delimiters must be paired; use `align`/`aligned` line breaks for expressions too long for a page. Equations are rendered as authored; mathematical errors in the source are not corrected.
+
 ## Cache and offline mode
 
 Downloads use the OS-specific user cache, selected by [platformdirs](https://platformdirs.readthedocs.io/en/latest/api.html#platformdirs.user_cache_path):
@@ -103,7 +126,7 @@ System fonts use local CSS `@font-face` sources, with no copying, redistribution
 
 The renderer checks the selected text faces and bundled code faces, then waits for font layout before printing. Missing/corrupt bundled fonts remain fatal because they are required for dependable output. Used fonts are embedded in the PDF. Fonts can change line wrapping and page counts. Glyphs outside a family's coverage may use system fallbacks; the default Source Sans Pro option retains the original Hugging Face fallback stack.
 
-The bundled Source Sans Pro and IBM Plex Mono fonts retain their SIL Open Font License 1.1 and copyright notices. See [font provenance and licenses](../mdx_printkit/fonts/README.md) for pinned revisions, download URLs, and checksums. Application code has no license pending the owner's choice.
+The bundled Source Sans Pro, IBM Plex Mono, and STIX Two Math fonts retain their SIL Open Font License 1.1 and copyright notices. See [font provenance and licenses](../mdx_printkit/fonts/README.md) for pinned revisions, download URLs, and checksums. Application code has no license pending the owner's choice.
 
 ## Limits and document safety
 

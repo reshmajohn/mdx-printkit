@@ -6,6 +6,8 @@ Source Sans Pro: Adobe release `2.045R-ro/1.095R-it` (upright 2.045, italic 1.09
 
 IBM Plex Mono: Google Fonts distribution, revision `01d5d9f05246fb7090a8403b81257535cb1a088b`.
 
+STIX Two Math: official [STIX Fonts release `v2.13`](https://github.com/stipub/stixfonts/releases/tag/v2.13), static TrueType math font. Used only for equations, with its original `OFL.txt`. Its OpenType MATH table supports native Chromium equation layout; the TrueType version also permits explicit PDF font identity/embedding checks.
+
 Upstream sources: [Adobe Source Sans](https://github.com/adobe-fonts/source-sans/releases/tag/2.045R-ro%2F1.095R-it) and [Google Fonts IBM Plex Mono](https://github.com/google/fonts/tree/01d5d9f05246fb7090a8403b81257535cb1a088b/ofl/ibmplexmono).
 
 The original Source Sans Pro release is used deliberately to retain its family/PostScript names. The fonts have not been renamed, modified, or converted to Source Sans 3. They are copied into the temporary render directory and loaded through local CSS `@font-face` rules. No system installation or runtime font download is needed.
@@ -21,3 +23,5 @@ The original Source Sans Pro release is used deliberately to retain its family/P
 | `ibm-plex-mono/IBMPlexMono-Bold.ttf` | `ac27abd6450a64dd94467580a02fe6235156d5b92f2926ebbc8e7489df64e0be` | [source](https://raw.githubusercontent.com/google/fonts/01d5d9f05246fb7090a8403b81257535cb1a088b/ofl/ibmplexmono/IBMPlexMono-Bold.ttf) |
 | `ibm-plex-mono/IBMPlexMono-Italic.ttf` | `3362fc791b0652193328b862c1c5f23a789bc7288b1617fa63302f88689a2a34` | [source](https://raw.githubusercontent.com/google/fonts/01d5d9f05246fb7090a8403b81257535cb1a088b/ofl/ibmplexmono/IBMPlexMono-Italic.ttf) |
 | `ibm-plex-mono/OFL.txt` | `7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da` | [source](https://raw.githubusercontent.com/google/fonts/01d5d9f05246fb7090a8403b81257535cb1a088b/ofl/ibmplexmono/OFL.txt) |
+| `stix-two-math/STIXTwoMath-Regular.ttf` | `2e0331951fd61efb60e4247db7e1b6b7f516f224987d6290c1d45437809a0977` | [source](https://raw.githubusercontent.com/stipub/stixfonts/v2.13/fonts/static_ttf/STIXTwoMath-Regular.ttf) |
+| `stix-two-math/OFL.txt` | `bec17cee6412788db45fd2644b301afbc99cc5d372ddd3345dc4a7bfdefb9f04` | [source](https://raw.githubusercontent.com/stipub/stixfonts/v2.13/OFL.txt) |

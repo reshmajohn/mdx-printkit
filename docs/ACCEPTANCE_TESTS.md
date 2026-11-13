@@ -13,6 +13,9 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 | Folder CLI | Empty/missing/non-directory input, file as output directory, colliding PDF destinations | Helpful nonzero failure; destination collisions detected before writing |
 | Folder CLI | Unreadable document followed by a valid document | Valid file still converts; nonzero exit and success/failure summary; previous PDF for failed document preserved |
 | Markdown | Headings, paragraphs, lists, code fences, link, table | Print HTML contains content in correct order; code fence isn't parsed as HTML |
+| Equations | Inline/display TeX, fractions, roots, scripts, sums, align, cases | Real MathML, no Markdown damage; paragraph displays keep valid HTML; equals signs align in actual PDF coordinates |
+| Equations | Malformed/unknown TeX, attempted markup or file inclusion, excessive length/nesting | Visible escaped TeX and warning; no execution or image fetch; code/currency/escaped dollars stay literal |
+| Equations | Offline Letter/A4 PDFs, missing math font, system body-font fallback | STIX Two Math is identifiable and embedded, equations fit the synthetic page, numeric variants work; missing math font is fatal; fallback keeps math/code fonts |
 | HTML | `<div class="flex justify-center"><img src="..." alt="..."></div>` | Image is resolved, centered, scaled; alt description preserved |
 | Markdown image | `![sample](local.png)` | Image appears and relative path resolves against input-file location |
 | Remote image | Synthetic image served by local HTTP server | Download, cache, and render; second run reuses cache |
@@ -34,7 +37,7 @@ Build a small automated test suite (pytest) around the parser, media resolver, G
 | Platforms | Local renderer URI with Unicode/spaces/percent/hash | Native path conversion succeeds and only files inside the temporary render directory are allowed |
 | Platforms | Default native cache with an earlier cached image | Offline conversion can reuse the legacy cache; explicit cache overrides remain isolated |
 | Platforms | Browser or Linux libraries missing | Distinct actionable setup commands without hardcoded `.venv/bin` assumptions |
-| Packaging | Built wheel and isolated installation | CSS, seven font files, both original font licenses, and provenance are present; conversion works outside the source checkout |
+| Packaging | Built wheel and isolated installation | CSS, eight font files, all three original font licenses, and provenance are present; conversion works outside the source checkout |
 | Print | Long title, tall/wide image, long code line | No obvious clipping or severe layout corruption |
 | Safety | `<script>`, `onerror`, `javascript:` URL, unsupported custom JSX | No execution; warnings/placeholder as applicable; no external renderer fetch |
 
@@ -71,6 +74,8 @@ As an **optional live integration test**, make a throwaway local `.mdx` containi
 When the private `reference-input/extension-image.mdx` is present, convert it online and again from cache with `--offline`. It includes nine image references, four of which are animated GIFs. Verify four labeled, distinct frames per GIF, embedded font identities, original media order, and readable layout. Keep the input and fetched course assets unchanged and outside version control.
 
 ## Final manual review
+
+When `reference-input/yolo.mdx` and its original PDF are available, write the revised conversion to `output/yolo-math.pdf` without replacing either reference. Inspect the piecewise function, aligned probability derivation, sums, indicator digits, and square-root loss terms. Verify all source formulas become MathML, the math font is embedded, media/storyboard order is retained, and reference checksums are unchanged.
 - Open or render at least the first page and one page containing a GIF storyboard; check typography, margins, captions, and alignment.
 - Check a cached/offline regeneration when feasible.
 - Execute `pytest` and report passing/failing counts; run `mdx-printkit --help`.
